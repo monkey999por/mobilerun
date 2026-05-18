@@ -62,7 +62,11 @@ export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, 
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <span style={{ color: "var(--text-dim)", fontSize: 12 }}>
-          {commands.length} 件 · {orderedGroups.length} グループ
+          {commands.length} 件 · {orderedGroups.length} グループ ·{" "}
+          <span className="cmd-card-tag atomic" style={{ marginLeft: 4 }}>
+            atomic
+          </span>{" "}
+          tag のものは <code>.claude/skills/</code> から呼ばれる前提のパーツ
         </span>
         <button className="primary" onClick={() => setEditor({ mode: "new" })}>
           + 新規
@@ -216,7 +220,24 @@ function CommandGroup({ groupName, commands, pendingId, disabledAll, onRun, onEd
             const preview = previewCommand(c);
             return (
               <article key={c.id} className="cmd-card">
-                <h3 className="cmd-card-title">{c.name}</h3>
+                <h3 className="cmd-card-title">
+                  {c.name}
+                  {c.tags.includes("atomic") && (
+                    <span
+                      className="cmd-card-tag atomic"
+                      title="このコマンドは Claude Code の skill (.claude/skills/*/SKILL.md) から呼ばれる前提の atomic です。viewer で単体実行も可能だが、通常は skill 経由で連鎖実行されます。"
+                    >
+                      atomic
+                    </span>
+                  )}
+                  {c.tags
+                    .filter((t) => t !== "atomic")
+                    .map((t) => (
+                      <span key={t} className="cmd-card-tag">
+                        {t}
+                      </span>
+                    ))}
+                </h3>
                 {description && (
                   <div className="cmd-card-desc-wrap" tabIndex={0}>
                     <p className="cmd-card-desc">{description}</p>

@@ -1,6 +1,8 @@
 ---
 name: x-follow-recommended
-description: X (Twitter) の『おすすめのユーザー』ページから上から順に 5 人フォローする。x-open-search-recommended → x-follow-current-card × 5 を回す。
+description: X (Twitter) の検索→『おすすめのユーザー』ページから上から順に 5 アカウントをフォローする。
+when_to_use: 「X でフォローしといて」「おすすめユーザーをフォロー」「フォロー 5 人」のようにアカウントを増やしたい時。特定ユーザーをフォローしたい場合は使わない (x-follow-current-card atomic を直接使う)。
+allowed-tools: Bash(curl *) Bash(jq *) Bash(sleep *)
 ---
 
 # x-follow-recommended
