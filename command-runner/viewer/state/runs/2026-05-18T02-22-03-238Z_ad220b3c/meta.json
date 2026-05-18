@@ -1,0 +1,21 @@
+{
+  "id": "2026-05-18T02-22-03-238Z_ad220b3c",
+  "commandId": "tiktok-lite-macro-scroll",
+  "commandName": "TikTok Lite スワイプマクロ (1000回)",
+  "device": "adb-28021JEGR16134-PfHNyF._adb-tls-connect._tcp",
+  "argv": [
+    "macro",
+    "replay",
+    "/app/macros/tiktok_lite_scroll3000.json",
+    "-d",
+    "adb-28021JEGR16134-PfHNyF._adb-tls-connect._tcp",
+    "--delay",
+    "0",
+    "--max-steps",
+    "2002"
+  ],
+  "status": "success",
+  "startedAt": "2026-05-18T02:22:03.239Z",
+  "exitCode": 0,
+  "endedAt": "2026-05-18T02:22:07.476Z"
+}

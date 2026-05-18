@@ -1,0 +1,23 @@
+$ mobilerun macro replay /app/macros/tiktok_lite_scroll3000.json -d adb-28021JEGR16134-PfHNyF._adb-tls-connect._tcp --delay 0 --max-steps 2002
+🎬 Mobilerun Macro Replay
+📱 Using device: adb-28021JEGR16134-PfHNyF._adb-tls-connect._tcp
+📄 Loading macro from file: /app/macros/tiktok_lite_scroll3000.json
+📋 Macro Information:
+   Description: Open TikTok Lite and swipe to next video 3000 times
+   Version: 1.0
+   Total actions: 6001
+   Device: adb-28021JEGR16134-PfHNyF._adb-tls-connect._tcp
+   Delay between actions: 0.0s
+   Maximum steps: 2002
+▶️  Starting macro replay...
+🎯 Limiting to 2002 steps
+🎬 Starting macro replay: 'Open TikTok Lite and swipe to next video 3000 times'
+📊 Total actions to execute: 2002 / 6001
+
+📍 Step 1/6001: start_app
+   Description: Launch TikTok Lite
+* daemon not running; starting now at tcp:5037
+* daemon started successfully
+💥 Error: device 'adb-28021JEGR16134-PfHNyF._adb-tls-connect._tcp' not found
+
+[exit 0]

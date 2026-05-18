@@ -1,0 +1,7 @@
+node_modules/
+viewer/dist/
+viewer/state/*.json
+!viewer/state/.gitkeep
+logs/
+*.log
+.env

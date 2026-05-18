@@ -1,0 +1,58 @@
+# mobilerun command-runner viewer (dev server)
+#
+# 起動: docker compose up -d  (このディレクトリで)
+# 停止: docker compose down
+# ログ: docker compose logs -f viewer
+#
+# 公開はしない方針: image 名に localhost/ プレフィックス → docker push 不可
+#
+# 制限事項:
+#   - macOS Docker Desktop で adb mdns 探索を使う場合は host networking が必要 (4.34+ で要 opt-in)。
+#     ポートマッピング (デフォルト) でも viewer の編集機能はフル稼働、adb 自動探索だけ動かない。
+#   - 自動探索が動かない時は viewer の「手動入力」タブで IP:port を入れる。
+
+services:
+  viewer:
+    # Google 公式 platform-tools (adb) は linux/amd64 しか配布していないので明示。
+    # Apple Silicon では Rosetta 経由 (Docker Desktop > Settings > 'Use Rosetta...' を ON)
+    platform: linux/amd64
+    build:
+      # build context は repo root。mobilerun 本体ソースを含めるため
+      context: ..
+      dockerfile: command-runner/Dockerfile
+      platforms:
+        - linux/amd64
+    image: localhost/mobilerun-command-runner:local
+    container_name: mobilerun-command-runner
+    restart: unless-stopped
+    ports:
+      - "3101:3101"   # Hono API
+      - "3102:3102"   # Vite dev server (ブラウザはこっち)
+    # host networking を使いたい場合 (Linux / macOS Docker Desktop 4.34+):
+    #   network_mode: host
+    #   ports: 削除
+    user: "node"
+    volumes:
+      # command-runner ディレクトリを bind mount → ホストの編集が即反映
+      - .:/app
+      # node_modules は image 内のものを使う (host 側に流出しない)
+      - /app/node_modules
+      # mobilerun 本体ソースを bind mount → editable install の参照先と一致させる
+      - ..:/opt/mobilerun-src
+      # mobilerun のホスト config を共有 (Anthropic OAuth 認証など)
+      - ${HOME}/Library/Application Support/droidrun:/home/node/.config/droidrun
+    environment:
+      - NODE_ENV=development
+      - TZ=Asia/Tokyo
+      - ADB_BIN=adb
+      - MOBILERUN_BIN=mobilerun
+      # adb クライアント (CLI / Python lib 両方) をホストの adb サーバーに接続させる。
+      # 事前にホストで `adb -a -P 5037 nodaemon server start &` を一度実行しておくこと。
+      # - ADB_SERVER_SOCKET: 公式 adb バイナリが見る
+      # - ANDROID_ADB_SERVER_HOST/PORT: mobilerun が使う async_adbutils など Python 系が見る
+      - ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
+      - ANDROID_ADB_SERVER_HOST=host.docker.internal
+      - ANDROID_ADB_SERVER_PORT=5037
+    # Linux でも host.docker.internal を解決させる
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
