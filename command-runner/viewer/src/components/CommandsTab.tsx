@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CommandFile } from "../types";
+import type { CommandFile, CommandParameter } from "../types";
 import { startRun } from "../api";
 import { previewCommand } from "../utils";
 import { CommandEditor } from "./CommandEditor";
@@ -20,12 +20,13 @@ export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, 
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>(null);
+  const [paramPrompt, setParamPrompt] = useState<CommandFile | null>(null);
 
-  async function run(cmd: CommandFile) {
+  async function launch(cmd: CommandFile, parameters?: Record<string, string>) {
     setErr(null);
     setPendingId(cmd.id);
     try {
-      const r = await startRun(cmd.id);
+      const r = await startRun(cmd.id, parameters);
       onLaunched(r.id);
     } catch (e) {
       const err = e as Error & { code?: string };
@@ -37,6 +38,16 @@ export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, 
     } finally {
       setPendingId(null);
     }
+  }
+
+  function run(cmd: CommandFile) {
+    // parameter があれば実行モーダルでまず値を集めてから launch する。
+    if (cmd.parameters && cmd.parameters.length > 0) {
+      setErr(null);
+      setParamPrompt(cmd);
+      return;
+    }
+    void launch(cmd);
   }
 
   const byGroup = new Map<string, CommandFile[]>();
@@ -97,6 +108,85 @@ export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, 
           }}
         />
       )}
+      {paramPrompt && (
+        <ParamPromptModal
+          command={paramPrompt}
+          busy={pendingId === paramPrompt.id}
+          onCancel={() => setParamPrompt(null)}
+          onSubmit={(values) => {
+            const cmd = paramPrompt;
+            setParamPrompt(null);
+            void launch(cmd, values);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface ParamPromptProps {
+  command: CommandFile;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (values: Record<string, string>) => void;
+}
+
+function ParamPromptModal({ command, busy, onCancel, onSubmit }: ParamPromptProps) {
+  const params: CommandParameter[] = command.parameters ?? [];
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    for (const p of params) init[p.name] = p.default ?? "";
+    return init;
+  });
+  const [localErr, setLocalErr] = useState<string | null>(null);
+
+  function submit() {
+    for (const p of params) {
+      if (p.required && !values[p.name]?.trim()) {
+        setLocalErr(`${p.name} は必須です`);
+        return;
+      }
+    }
+    setLocalErr(null);
+    onSubmit(values);
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onCancel}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ minWidth: 480 }}>
+        <h2>パラメータ入力: {command.name}</h2>
+        <div style={{ color: "var(--text-dim)", fontSize: 12, marginBottom: 12 }}>
+          prompt 内の <code>{`{{name}}`}</code> がここで入れた値で置換されてから mobilerun に渡されます。
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {params.map((p) => (
+            <div key={p.name} className="form-row" style={{ marginBottom: 0 }}>
+              <label>
+                {p.name}
+                {p.required && <span style={{ color: "var(--err)", marginLeft: 4 }}>*</span>}
+                {p.description && (
+                  <span style={{ color: "var(--text-dim)", fontWeight: 400, marginLeft: 6, fontSize: 11 }}>
+                    {p.description}
+                  </span>
+                )}
+              </label>
+              <textarea
+                value={values[p.name] ?? ""}
+                onChange={(e) => setValues((v) => ({ ...v, [p.name]: e.target.value }))}
+                placeholder={p.default ?? ""}
+                style={{ minHeight: 60, fontFamily: "var(--mono)", fontSize: 12, resize: "vertical" }}
+              />
+            </div>
+          ))}
+        </div>
+        {localErr && <div className="notice" style={{ marginTop: 10 }}>{localErr}</div>}
+        <div className="actions">
+          <button onClick={onCancel} disabled={busy}>キャンセル</button>
+          <button className="primary" onClick={submit} disabled={busy}>
+            {busy ? "起動中..." : "実行"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

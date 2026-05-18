@@ -128,12 +128,24 @@ app.delete("/api/device", (c) => {
 // --- 実行 ---
 
 app.post("/api/runs", async (c) => {
-  const body = (await c.req.json().catch(() => ({}))) as { commandId?: string };
+  const body = (await c.req.json().catch(() => ({}))) as {
+    commandId?: string;
+    parameters?: unknown;
+  };
   if (!body.commandId) return c.json({ error: "commandId required" }, 400);
+  // 文字列値のみ受け付ける。それ以外は無視 (skill 経由で number/bool が来ても文字列化する設計)。
+  let parameters: Record<string, string> | undefined;
+  if (body.parameters && typeof body.parameters === "object") {
+    parameters = {};
+    for (const [k, v] of Object.entries(body.parameters as Record<string, unknown>)) {
+      if (typeof v === "string") parameters[k] = v;
+      else if (v != null) parameters[k] = String(v);
+    }
+  }
   const d = getDevice();
   if (!d) return c.json({ error: "device not set or expired", code: "device_required" }, 409);
   try {
-    const meta = await startRun({ commandId: body.commandId, device: d.device });
+    const meta = await startRun({ commandId: body.commandId, device: d.device, parameters });
     return c.json({ run: meta });
   } catch (err) {
     if (err instanceof RunInProgressError) {
