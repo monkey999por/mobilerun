@@ -1,0 +1,37 @@
+{
+  "name": "mobilerun-command-runner",
+  "version": "0.1.0",
+  "description": "mobilerun コマンドを一覧・実行・スケジュールするローカル管理画面",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "viewer": "tsx viewer/server.ts",
+    "viewer:dev": "SERVE_STATIC=0 tsx watch viewer/server.ts",
+    "client:dev": "vite --config viewer/vite.config.ts",
+    "build:client": "vite build --config viewer/vite.config.ts",
+    "build": "npm run build:client",
+    "dev": "concurrently -k -n api,ui -c blue,green \"npm:viewer:dev\" \"npm:client:dev\"",
+    "start": "NODE_ENV=production tsx viewer/server.ts",
+    "typecheck": "tsc --noEmit && tsc -p viewer/tsconfig.client.json --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.14",
+    "croner": "^10.0.1",
+    "hono": "^4.12.12",
+    "qrcode": "^1.5.4",
+    "yaml": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8"
+  }
+}

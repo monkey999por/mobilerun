@@ -1,0 +1,37 @@
+# ビルドコンテキスト = repo root を想定。
+# .dockerignore は context のルート (= repo root) からの相対パスで効く。
+
+# Node 関連
+**/node_modules
+command-runner/viewer/dist
+command-runner/viewer/state/*.json
+
+# Python 関連
+**/__pycache__
+**/*.pyc
+.venv
+**/.venv
+
+# Git / OS
+.git
+.gitignore
+.DS_Store
+
+# ログとテスト
+**/*.log
+logs/
+.pytest_cache
+.mypy_cache
+.ruff_cache
+tests/
+
+# upstream の docs / バイナリ系 (image を肥大化させない)
+docs/
+compat/
+gen-docs-sdk-ref.sh
+
+# Docker 関連 (image に入れない)
+command-runner/Dockerfile
+command-runner/compose.yaml
+command-runner/.dockerignore
+Dockerfile

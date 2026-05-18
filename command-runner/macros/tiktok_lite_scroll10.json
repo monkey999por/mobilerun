@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "description": "Open TikTok Lite and swipe to next video 10 times (3s interval)",
+  "timestamp": "2026-05-18T00:00:00",
+  "total_actions": 22,
+  "actions": [
+    {"action_type": "start_app", "package": "com.ss.android.ugc.tiktok.lite", "description": "Launch TikTok Lite"},
+    {"action_type": "wait", "duration": 5.0, "description": "Wait for app to load"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 1"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (1->2)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 2"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (2->3)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 3"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (3->4)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 4"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (4->5)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 5"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (5->6)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 6"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (6->7)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 7"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (7->8)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 8"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (8->9)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 9"},
+    {"action_type": "swipe", "start_x": 540, "start_y": 1800, "end_x": 540, "end_y": 600, "duration_ms": 250, "description": "Next video (9->10)"},
+
+    {"action_type": "wait", "duration": 3.0, "description": "Watch video 10"}
+  ]
+}

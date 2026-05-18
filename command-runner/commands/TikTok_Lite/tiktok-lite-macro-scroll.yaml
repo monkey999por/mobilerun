@@ -1,0 +1,13 @@
+id: tiktok-lite-macro-scroll
+name: TikTok Lite スワイプマクロ (1000回)
+type: macro
+macro_file: macros/tiktok_lite_scroll3000.json
+delay: 0
+max_steps: 2002
+status: confirmed
+tags:
+  - tiktok
+  - scroll
+  - macro
+notes: モーダル非対応 / トークン消費なし。短時間のみ。広告やリワードモーダルが出ると以降空振り。
+prompt: "短時間のみ。広告やリワードモーダルが出ると以降空振りするので注意。`--max-steps` で長さ調整 (式: 2 + 2 × スワイプ回数)。"
