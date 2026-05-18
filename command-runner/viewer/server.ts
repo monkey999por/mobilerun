@@ -35,6 +35,7 @@ import {
   cancelRun,
   isRunning,
   listRunningIds,
+  annotateViewerSignal,
   RunInProgressError,
 } from "./lib/runs.ts";
 import * as adb from "./lib/adb.ts";
@@ -393,3 +394,17 @@ a{color:#7aa2f7}code{background:#1c2230;padding:2px 6px;border-radius:4px;font-f
 serve({ fetch: app.fetch, port: PORT, hostname: "0.0.0.0" }, (info) => {
   console.log(`[command-runner] listening on http://localhost:${info.port}`);
 });
+
+// 子 (= mobilerun) が "exit null" で死ぬ問題 (#3) の原因切り分け用。viewer が何らかの
+// シグナルで終了する直前に、各 run の log にどの signal だったかを書き込む。
+// (例: tsx watch のリロード → SIGTERM、concurrently -k での連鎖 → SIGTERM、
+//  ターミナル切断 → SIGHUP、docker stop → SIGTERM→SIGKILL、Ctrl-C → SIGINT)
+for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {
+  process.on(sig, () => {
+    console.log(`[command-runner] received ${sig}, recording into active runs`);
+    annotateViewerSignal(sig);
+    // 自前ハンドラを解除して default 動作 (= process 終了) に戻す。
+    process.removeAllListeners(sig);
+    process.kill(process.pid, sig);
+  });
+}

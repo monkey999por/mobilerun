@@ -97,6 +97,7 @@ export interface RunMeta {
   startedAt: string;
   endedAt?: string;
   exitCode?: number | null;
+  exitSignal?: string | null;
   scheduleEntryId?: string;
 }
 
