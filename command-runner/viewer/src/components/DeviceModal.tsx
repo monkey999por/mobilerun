@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { adbConnect, adbDisconnect, adbDiscover, adbPair, saveDevice } from "../api";
+import { adbConnect, adbDisconnect, adbDiscover, adbPair, probeTcp, saveDevice } from "../api";
+import type { TcpProbeResult } from "../api";
 import type { AdbDiscover, DeviceState, MdnsService } from "../types";
 import { QrPairPanel } from "./QrPairPanel";
 
@@ -30,6 +31,11 @@ export function DeviceModal({ current, defaultTtlSeconds, reason, onSaved, onCan
   const [pairTarget, setPairTarget] = useState<MdnsService | null>(null);
   const [pin, setPin] = useState("");
   const [manualAddr, setManualAddr] = useState(current?.device || "");
+  // 手動ペアリング (mDNS が届かない WSL2 / Docker 環境向け)
+  const [manualPairAddr, setManualPairAddr] = useState("");
+  const [manualPairPin, setManualPairPin] = useState("");
+  const [manualPaired, setManualPaired] = useState(false);
+  const [lastProbe, setLastProbe] = useState<TcpProbeResult | null>(null);
 
   const refresh = useCallback(async () => {
     setDiscovering(true);
@@ -101,9 +107,66 @@ export function DeviceModal({ current, defaultTtlSeconds, reason, onSaved, onCan
     }
     setBusy(true);
     setErr(null);
+    setLastProbe(null);
     try {
-      const d = await saveDevice(manualAddr.trim(), ttl);
-      onSaved(d);
+      const res = await adbConnect(manualAddr.trim(), ttl);
+      if (res.ok && res.device) {
+        onSaved(res.device);
+        return;
+      }
+      if (res.probe) setLastProbe(res.probe);
+      // 接続失敗時は理由を表示し、保存はしない。
+      // probe 結果から
+      //   reachable=false → ポート/IP が違うか到達できない (画面の値が古い可能性大)
+      //   reachable=true  → ポートは生きてるが TLS handshake が拒否されている (ペアリング期限切れ等)
+      // を切り分けて案内する。
+      const hint = res.probe
+        ? res.probe.reachable
+          ? "TCP は届いていますが adb 側で拒否されました。一度「(1) ペアリング」をやり直してください。"
+          : `TCP 自体届きません (${res.probe.error ?? "unreachable"})。端末のワイヤレスデバッグ画面で表示されている "IPアドレスとポート" が古くなっている可能性が高いので、画面を一度閉じて開き直し最新値を入れてください。`
+        : "";
+      setErr(`${res.message?.trim() || "接続失敗"}\n${hint}`.trim());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doProbe() {
+    if (!manualAddr.trim()) return;
+    setBusy(true);
+    setLastProbe(null);
+    setErr(null);
+    try {
+      const r = await probeTcp(manualAddr.trim());
+      setLastProbe(r);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doManualPair() {
+    if (!manualPairAddr.trim() || manualPairPin.length !== 6) {
+      setErr("pair address と 6 桁 PIN を入力してください");
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await adbPair(manualPairAddr.trim(), manualPairPin);
+      if (!res.ok) {
+        setErr(res.message?.trim() || "ペアリング失敗");
+        return;
+      }
+      setManualPaired(true);
+      // ペアリング成功直後、PIN フィールドはクリア。
+      // 端末は連続して「接続用 ip:port」を表示しているはずなので、
+      // ユーザーがそれを下のフィールドに入れて接続する。
+      setManualPairPin("");
+      setErr(`ペアリング成功: ${res.message?.trim() || ""}\n続けて下の「接続用 ip:port」を入力してください。`);
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -229,20 +292,99 @@ export function DeviceModal({ current, defaultTtlSeconds, reason, onSaved, onCan
         )}
 
         {mode === "manual" && (
-          <div className="form-row">
-            <label>device address (例: 100.64.1.47:33515)</label>
-            <input
-              value={manualAddr}
-              onChange={(e) => setManualAddr(e.target.value)}
-              placeholder="100.64.1.47:33515"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void doManualSave();
-              }}
-            />
-            <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
-              <button className="primary" onClick={() => void doManualSave()} disabled={busy}>
-                {busy ? "保存中..." : "保存"}
-              </button>
+          <div>
+            <div style={{ fontSize: 12, color: "var(--text-dim)", marginBottom: 10, lineHeight: 1.5 }}>
+              <strong>WSL2 / Docker bridge 環境向け</strong>: mDNS マルチキャストがコンテナまで届かないため
+              「自動探索」「QR ペアリング」が動かない時に使う。
+              <br />
+              手順: 端末側で「開発者オプション → ワイヤレスデバッグ」を ON →
+              <br />
+              <code>(1) 初回のみ</code>「ペアリングコードでデバイスをペア設定」を開き、
+              表示された ip:port と 6 桁 PIN を下の <strong>ペアリング</strong> 欄に入力 →
+              <br />
+              <code>(2) 毎回</code> ワイヤレスデバッグ画面の <em>IPアドレスとポート</em>
+              (ペアリングとは別) を下の <strong>接続</strong> 欄に入れて「接続して保存」。
+            </div>
+
+            <div style={{ padding: 10, background: "var(--panel-2)", borderRadius: 6, marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                (1) ペアリング {manualPaired && <span className="badge ok">完了</span>}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8 }}>
+                端末側「ペアリングコードでデバイスをペア設定」画面の値を入れる。一度成功すれば次回以降は不要。
+              </div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                <input
+                  value={manualPairAddr}
+                  onChange={(e) => setManualPairAddr(e.target.value)}
+                  placeholder="ペアリング用 ip:port (例 192.168.0.42:39521)"
+                  style={{ flex: 2, fontFamily: "var(--mono)" }}
+                />
+                <input
+                  value={manualPairPin}
+                  onChange={(e) => setManualPairPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="123456"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  style={{ flex: 1, fontFamily: "var(--mono)", letterSpacing: 3, textAlign: "center" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && manualPairPin.length === 6) void doManualPair();
+                  }}
+                />
+                <button
+                  onClick={() => void doManualPair()}
+                  disabled={busy || !manualPairAddr.trim() || manualPairPin.length !== 6}
+                >
+                  {busy ? "..." : "ペアリング"}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ padding: 10, background: "var(--panel-2)", borderRadius: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>(2) 接続</div>
+              <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 8 }}>
+                端末側「ワイヤレスデバッグ」画面の <em>IPアドレスとポート</em> (上のペアリング用とは別ポート)。
+                内部で <code>adb connect</code> → 成功時に device として保存。
+              </div>
+              <input
+                value={manualAddr}
+                onChange={(e) => setManualAddr(e.target.value)}
+                placeholder="接続用 ip:port (例 192.168.0.42:43219)"
+                style={{ width: "100%", fontFamily: "var(--mono)" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void doManualSave();
+                }}
+              />
+              {lastProbe && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "6px 8px",
+                    background: lastProbe.reachable ? "rgba(0,128,0,0.12)" : "rgba(255,80,80,0.12)",
+                    border: `1px solid ${lastProbe.reachable ? "rgba(0,180,0,0.4)" : "rgba(255,80,80,0.4)"}`,
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontFamily: "var(--mono)",
+                  }}
+                >
+                  TCP probe {lastProbe.host}:{lastProbe.port}: {lastProbe.reachable
+                    ? `reachable (${lastProbe.latencyMs}ms)`
+                    : `unreachable (${lastProbe.error ?? "?"}, ${lastProbe.latencyMs}ms)`}
+                </div>
+              )}
+              <div style={{ marginTop: 8, display: "flex", justifyContent: "space-between", gap: 6 }}>
+                <button onClick={() => void doProbe()} disabled={busy || !manualAddr.trim()}>
+                  TCP 疎通確認
+                </button>
+                <button
+                  className="primary"
+                  onClick={() => void doManualSave()}
+                  disabled={busy || !manualAddr.trim()}
+                >
+                  {busy ? "実行中..." : "接続して保存"}
+                </button>
+              </div>
             </div>
           </div>
         )}

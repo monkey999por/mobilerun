@@ -64,9 +64,12 @@ npm start
 
 `mobilerun` バイナリのパスを変えたい場合は `MOBILERUN_BIN=/path/to/mobilerun npm start` で上書き可能。
 
-### 事前準備: ホストの adb サーバーを共有する (mDNS 探索のため)
+### adb サーバーの所在 (mDNS 探索を使う場合のみ要設定)
 
-コンテナ内の adb クライアントは `ADB_SERVER_SOCKET=tcp:host.docker.internal:5037` でホストの adb サーバーに繋ぎに行く。マルチキャストはコンテナまで届かないので、**ホストで adb サーバーを TCP listen させて、そこ越しに mDNS を実施する**方式。
+既定ではコンテナ内で adb サーバーを起動するので、追加設定なしで `adb connect ip:port` は動く。
+ただしマルチキャスト mDNS は docker bridge を越えられないため、**「自動探索」「QR ペアリング」タブは空のまま**になる。これらを使いたいケースのみ以下を行う:
+
+**Mac の場合** — ホストで adb サーバーを TCP listen させ、コンテナを `host.docker.internal:5037` 経由でそこに接続させる:
 
 ```bash
 # ホスト (Mac) で一度実行。バックグラウンドで起動しっぱなしにする。
@@ -74,16 +77,18 @@ adb kill-server
 adb -a -P 5037 nodaemon server start &
 ```
 
-`adb -a` で 0.0.0.0:5037 をバインドする (LocalAddrAny)。ファイアウォール越しに LAN から見えないように Mac の firewall は ON のままで OK (Docker bridge からは通る)。
+そのうえで `compose.yaml` の `ADB_SERVER_SOCKET` / `ANDROID_ADB_SERVER_*` 行のコメントを外して `docker compose up -d` し直す。
 
-これで viewer の「自動探索」タブにホスト LAN の Wireless Debugging 端末が出る。
+**WSL2 の場合** — Windows ↔ WSL2 ↔ docker bridge と 2 段 NAT を越えるので、ホスト adb サーバーを立てても mDNS は届きにくい。**手動入力タブで pair → connect する**のが現実的 (下記参照)。どうしても mDNS 自動探索が必要なら Windows 11 22H2+ で `~/.wslconfig` に `networkingMode=mirrored` を入れ、`compose.yaml` を `network_mode: host` に切り替える必要がある。
 
 ### 既知の制限 (Docker)
 
-- 上記のホスト adb サーバーを起動し忘れると `自動探索` タブが空のまま。viewer の `手動入力` タブで `ip:port` を直接入れれば動く
+- 自動探索 / QR ペアリングはホスト adb サーバー共有 (Mac) か mirrored networking (Windows 11) が必須。WSL2 既定構成では空のまま
+- 上記が使えない時は viewer の **「手動入力」タブ** から **(1) pair ip:port + 6 桁 PIN → (2) connect ip:port** を順に入れる (WSL2 環境はこの導線で全部動く)
 - USB 接続デバイスは Docker からは見えない (USB パススルー不可)。USB 端末を使う時はホスト直 (B 起動方式) を選ぶ
 - **mobilerun の認証**: `${HOME}/Library/Application Support/droidrun` を bind mount しているので
-  ホストで `mobilerun anthropic login` 済みなら同じトークンが使われる
+  ホストで `mobilerun anthropic login` 済みなら同じトークンが使われる (WSL2 の場合は **コンテナ内で**
+  `docker compose exec viewer mobilerun anthropic login` を実行することで bind mount 先のホスト側に保存される)
 
 ## 緊急停止 (viewer から中断できない場合)
 
@@ -167,7 +172,13 @@ docker compose restart viewer
   connection service を探して接続まで一気通貫
 - *adb devices*: USB 接続済みなど、すでに `adb devices` に出ているもの。「選択して保存」で device 値にする
 
-**手動入力** — 自動探索が動かない時のフォールバック。`ip:port` を直接入れる。
+**手動入力** — 自動探索が動かない時のフォールバック (**WSL2/Docker bridge 環境ではこっちが標準**)。
+
+- 初回のみ: 端末側「ペアリングコードでデバイスをペア設定」を開き、表示される
+  `ip:port` と 6 桁 PIN を **(1) ペアリング** 欄に入れて「ペアリング」 → 内部で
+  `adb pair` 実行
+- 毎回: 端末側「ワイヤレスデバッグ」画面の `IPアドレスとポート` (ペアリング用とは別ポート)
+  を **(2) 接続** 欄に入れて「接続して保存」 → 内部で `adb connect` → 成功時に device 値として保存
 
 値は `viewer/state/device.json` に TTL 付きで保存される (デフォルト 8 時間)。
 期限切れ or 未設定の状態で起動 / 実行すると自動でモーダルが再表示される。

@@ -39,6 +39,10 @@ services:
       - /app/node_modules
       # mobilerun 本体ソースを bind mount → editable install の参照先と一致させる
       - ..:/opt/mobilerun-src
+      # adb クライアントの鍵 + ペアリング履歴 (adb_known_hosts.pb) を永続化。
+      # コンテナを recreate しても一度成功したペアリングが残るので、
+      # 「毎回ペアリングからやり直し」を防ぐ。
+      - adb-keys:/home/node/.android
       # mobilerun のホスト config を共有 (Anthropic OAuth 認証など)
       # platformdirs 経由で参照される config.yaml 用
       - ${HOME}/Library/Application Support/droidrun:/home/node/.config/droidrun
@@ -50,13 +54,22 @@ services:
       - TZ=Asia/Tokyo
       - ADB_BIN=adb
       - MOBILERUN_BIN=mobilerun
-      # adb クライアント (CLI / Python lib 両方) をホストの adb サーバーに接続させる。
-      # 事前にホストで `adb -a -P 5037 nodaemon server start &` を一度実行しておくこと。
-      # - ADB_SERVER_SOCKET: 公式 adb バイナリが見る
-      # - ANDROID_ADB_SERVER_HOST/PORT: mobilerun が使う async_adbutils など Python 系が見る
-      - ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
-      - ANDROID_ADB_SERVER_HOST=host.docker.internal
-      - ANDROID_ADB_SERVER_PORT=5037
+      # adb サーバーの所在:
+      #
+      # [既定] コンテナ内で adb サーバーを起動する。
+      #   - WSL2 / 純 Linux ホストはこちらでよい (ホスト adb との共有不要)。
+      #   - 制限: マルチキャスト mDNS は docker bridge を越えられないので
+      #     「自動探索 / QR ペアリング」タブは空になる。代わりに UI の
+      #     「手動入力」タブから ip:port + PIN を直接入れて pair → connect する。
+      #
+      # [Mac で mDNS 探索を使いたい場合] 以下のコメントを外し、ホストで
+      # 事前に `adb -a -P 5037 nodaemon server start &` を一度実行しておく。
+      # - ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
+      # - ANDROID_ADB_SERVER_HOST=host.docker.internal
+      # - ANDROID_ADB_SERVER_PORT=5037
     # Linux でも host.docker.internal を解決させる
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+volumes:
+  adb-keys:

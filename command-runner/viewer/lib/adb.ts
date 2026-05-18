@@ -7,9 +7,49 @@
 
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { createConnection } from "node:net";
 
 const execFileP = promisify(execFile);
 const ADB = process.env.ADB_BIN || "adb";
+
+export interface TcpProbeResult {
+  host: string;
+  port: number;
+  reachable: boolean;
+  latencyMs: number;
+  error?: string;
+}
+
+/**
+ * 生 TCP で host:port に到達できるかを確認する。
+ * adb connect が失敗した時に「ポートが届いてない」のか
+ * 「TLS handshake で弾かれた」のかを切り分けるための原因特定用。
+ */
+export function probeTcp(host: string, port: number, timeoutMs = 3000): Promise<TcpProbeResult> {
+  const started = Date.now();
+  return new Promise((resolve) => {
+    const sock = createConnection({ host, port });
+    let done = false;
+    const finish = (r: Omit<TcpProbeResult, "host" | "port" | "latencyMs">) => {
+      if (done) return;
+      done = true;
+      sock.destroy();
+      resolve({ host, port, latencyMs: Date.now() - started, ...r });
+    };
+    sock.setTimeout(timeoutMs);
+    sock.once("connect", () => finish({ reachable: true }));
+    sock.once("timeout", () => finish({ reachable: false, error: "timeout" }));
+    sock.once("error", (e) => finish({ reachable: false, error: e.message }));
+  });
+}
+
+export function parseHostPort(addr: string): { host: string; port: number } | null {
+  const m = addr.trim().match(/^\[?([^\]]+?)\]?:(\d{1,5})$/);
+  if (!m) return null;
+  const port = Number(m[2]);
+  if (!Number.isFinite(port) || port < 1 || port > 65535) return null;
+  return { host: m[1], port };
+}
 
 export type MdnsKind = "pairing" | "connect" | "other";
 
