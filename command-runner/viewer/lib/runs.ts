@@ -50,6 +50,10 @@ interface Subscriber {
 
 const subscribers = new Map<string, Set<Subscriber>>();
 const running = new Map<string, ChildProcessWithoutNullStreams>();
+/** cancelRun が呼ばれた run の id。close ハンドラは閉じる時点でこれを見て status を判定する。 */
+const cancelling = new Set<string>();
+/** SIGTERM 送って 5s 待っても死ななければ SIGKILL に escalate するタイマー。 */
+const escalateTimers = new Map<string, NodeJS.Timeout>();
 
 function ensureDirs(): void {
   if (!existsSync(RUNS_DIR)) mkdirSync(RUNS_DIR, { recursive: true });
@@ -142,9 +146,14 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
   writeMeta(meta);
 
   const bin = process.env.MOBILERUN_BIN || "mobilerun";
+  // detached: true で子を新規 process group (setsid) の leader にし、
+  // cancel 時に process.kill(-pid, ...) で mobilerun とその下の adb 等まで
+  // 一括で潰せるようにする。viewer 自身の pgrp とも切り離されるので、
+  // tsx watch リロード等で親 pgrp が SIGTERM を受けても子は生き残る (= #3 緩和)。
   const child = spawn(bin, argv, {
     cwd: PROJECT_ROOT,
     env: { ...process.env, FORCE_COLOR: "0" },
+    detached: true,
   });
   running.set(id, child);
 
@@ -155,7 +164,13 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
   });
   child.on("close", (code, signal) => {
     running.delete(id);
-    meta.status = code === 0 ? "success" : meta.status === "cancelled" ? "cancelled" : "failed";
+    const wasCancelled = cancelling.delete(id);
+    const t = escalateTimers.get(id);
+    if (t) {
+      clearTimeout(t);
+      escalateTimers.delete(id);
+    }
+    meta.status = wasCancelled ? "cancelled" : code === 0 ? "success" : "failed";
     meta.exitCode = code;
     meta.exitSignal = signal;
     meta.endedAt = new Date().toISOString();
@@ -172,13 +187,46 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
 export function cancelRun(id: string): boolean {
   const child = running.get(id);
   if (!child) return false;
+  if (cancelling.has(id)) return true; // 二度押し対策
+  cancelling.add(id);
   const m = readMeta(id);
   if (m) {
     m.status = "cancelled";
     writeMeta(m);
   }
-  child.kill("SIGTERM");
+  emitLog(id, `\n[cancel requested -> SIGTERM]\n`);
+  killTree(child, "SIGTERM");
+  // SIGTERM を無視して生き残る場合に備えて 5s で SIGKILL に escalate
+  const t = setTimeout(() => {
+    if (running.has(id)) {
+      emitLog(id, `[cancel still running after 5s -> SIGKILL]\n`);
+      killTree(child, "SIGKILL");
+    }
+    escalateTimers.delete(id);
+  }, 5000);
+  escalateTimers.set(id, t);
   return true;
+}
+
+/**
+ * detached: true で spawn したので、child.pid は新規 pgrp の leader pid と一致する。
+ * 負数 pid を kill に渡すと pgrp 全体にシグナルが飛び、mobilerun の下の adb 子プロセス
+ * までまとめて落とせる。fallback で child.kill も呼ぶ。
+ */
+function killTree(child: ChildProcessWithoutNullStreams, signal: NodeJS.Signals): void {
+  if (child.pid != null) {
+    try {
+      process.kill(-child.pid, signal);
+      return;
+    } catch {
+      /* fallthrough to direct kill */
+    }
+  }
+  try {
+    child.kill(signal);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function readMeta(id: string): RunMeta | null {
@@ -230,14 +278,16 @@ export function listRunningIds(): string[] {
 
 /**
  * viewer プロセス自身が SIGTERM/SIGHUP/SIGINT を受けた時に、active な子プロセスの log
- * 末尾に「viewer がシグナル X を受けた」と書き込んでから forward する。これにより、
- * "exit null" 単独では分からなかった原因 (tsx watch リロード / concurrently -k / 親 PG
- * SIGHUP / docker stop など) を log から事後特定できる。
+ * 末尾に「viewer がシグナル X を受けた」と書き込み、続けて kill する。
+ * 子は detached なので何もしないと孤児化して走り続け、再起動後の viewer から
+ * cancel もできなくなるため、ここで明示的に止める。
  */
 export function annotateViewerSignal(signal: NodeJS.Signals): void {
-  for (const id of running.keys()) {
+  for (const [id, child] of running.entries()) {
     try {
-      emitLog(id, `\n[viewer received ${signal}; forwarding to child]\n`);
+      emitLog(id, `\n[viewer received ${signal}; killing child]\n`);
+      cancelling.add(id);
+      killTree(child, "SIGTERM");
     } catch {
       /* ignore */
     }
