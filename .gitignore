@@ -34,6 +34,7 @@ credentials.yaml
 .*/
 !.gitignore
 !.github/
+!.claude/
 
 backend/
 frontend/

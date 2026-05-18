@@ -1,0 +1,24 @@
+id: x-open-search-recommended
+name: X 検索→おすすめユーザー専用ページ
+type: run
+steps: 10
+vision: true
+reasoning: true
+status: unconfirmed
+tags:
+  - x
+  - atomic
+  - follow
+notes: アトミック - 検索タブ→検索ボックスに『おすすめユーザー』と入力してそのページに遷移
+prompt: |
+  X アプリで『おすすめのユーザー』を一覧表示するページに遷移して停止してください。続けて x-follow-current-card などで個別フォローするための足場。
+
+  ## 手順
+  1. 画面下部のタブから『検索』(虫眼鏡アイコン) をタップ
+  2. 上部の検索ボックスをタップして入力モードに
+  3. キーワードに **おすすめユーザー** または **Suggested users** と入力
+  4. 表示された候補から『おすすめのユーザー』『フォローしてみる』『For you to follow』等のチップ / 候補項目をタップ
+  5. ユーザーカードがリスト表示されたら終了。表示できなかった場合は "could not open recommended users page" と報告
+
+  ## 絶対禁止
+  - リスト上で勝手にフォローを押さない (フォロー操作は呼び出し側のスキルが指示する)
