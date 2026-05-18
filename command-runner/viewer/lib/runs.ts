@@ -82,10 +82,25 @@ export interface StartRunInput {
   scheduleEntryId?: string;
 }
 
+/** 同時実行中の run があった場合に startRun が投げる error。 */
+export class RunInProgressError extends Error {
+  readonly code = "run_in_progress" as const;
+  readonly activeRunId: string;
+  constructor(activeRunId: string) {
+    super(`another run is already in progress (id=${activeRunId})`);
+    this.name = "RunInProgressError";
+    this.activeRunId = activeRunId;
+  }
+}
+
 export async function startRun(input: StartRunInput): Promise<RunMeta> {
   const cmd = getCommand(input.commandId);
   if (!cmd) throw new Error(`unknown command: ${input.commandId}`);
   if (!input.device) throw new Error("device is required");
+  // 1 viewer = 1 mobilerun プロセス。adb と端末は単一なので並列化しても干渉して
+  // 双方とも壊れるだけなので、別 run が動いている間は新規実行を拒否する。
+  const activeId = listRunningIds()[0];
+  if (activeId) throw new RunInProgressError(activeId);
   ensureDirs();
 
   const id = `${new Date().toISOString().replace(/[:.]/g, "-")}_${randomUUID().slice(0, 8)}`;
@@ -194,6 +209,10 @@ export function subscribe(id: string, sub: Subscriber): () => void {
 
 export function isRunning(id: string): boolean {
   return running.has(id);
+}
+
+export function listRunningIds(): string[] {
+  return [...running.keys()];
 }
 
 function shellQuote(parts: string[]): string {
