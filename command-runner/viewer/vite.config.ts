@@ -17,5 +17,11 @@ export default defineConfig({
     proxy: {
       "/api": "http://localhost:3101",
     },
+    // WSL2 + Docker bind-mount だと inotify が container まで通らないため
+    // HMR が走らない。500ms ポーリングに落とす。
+    watch: {
+      usePolling: true,
+      interval: 500,
+    },
   },
 });
