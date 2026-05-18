@@ -36,6 +36,7 @@ import {
   isRunning,
   listRunningIds,
   annotateViewerSignal,
+  reconcileStartup,
   RunInProgressError,
 } from "./lib/runs.ts";
 import * as adb from "./lib/adb.ts";
@@ -46,6 +47,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || (process.env.NODE_ENV === "production" ? 3102 : 3101));
 const SERVE_STATIC = process.env.SERVE_STATIC !== "0";
 const DIST_DIR = resolve(__dirname, "dist");
+
+// 前回プロセスが落ちた直後で disk meta が "running" のまま残っている run を
+// 整合させる (孤児プロセスが居れば回収して "cancelled"、居なければ "failed")。
+{
+  const { reconciled } = reconcileStartup();
+  if (reconciled.length) {
+    console.log(`[command-runner] reconciled ${reconciled.length} stale "running" runs:`, reconciled);
+  }
+}
 
 scheduler.init();
 

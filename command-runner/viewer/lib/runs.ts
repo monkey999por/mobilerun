@@ -41,6 +41,8 @@ export interface RunMeta {
   scheduleEntryId?: string;
   /** 実行時に注入されたパラメータ (prompt 内 {{key}} の置換用) */
   parameters?: Record<string, string>;
+  /** spawn 時の子 pid。viewer 再起動後の reconcile (生存確認 / 強制終了) で使う。 */
+  pid?: number;
 }
 
 interface Subscriber {
@@ -156,6 +158,10 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
     detached: true,
   });
   running.set(id, child);
+  if (typeof child.pid === "number") {
+    meta.pid = child.pid;
+    writeMeta(meta);
+  }
 
   child.stdout.on("data", (b) => emitLog(id, b.toString("utf-8")));
   child.stderr.on("data", (b) => emitLog(id, b.toString("utf-8")));
@@ -274,6 +280,60 @@ export function isRunning(id: string): boolean {
 
 export function listRunningIds(): string[] {
   return [...running.keys()];
+}
+
+/**
+ * viewer 起動時に呼ぶ。前回プロセスが落ちて in-memory state が消えたあと、
+ * disk 上に "running" のままで残っている meta を整合させる:
+ *   - pid が記録されており、まだ生存している → SIGTERM (孤児を回収) → "cancelled"
+ *   - 既に死んでいる / pid なし → そのまま "failed" にフラグ付け
+ * これをやらないと、UI の「実行中」表示が永久に残って #8 mutex に引っかかる。
+ */
+export function reconcileStartup(): { reconciled: string[] } {
+  if (!existsSync(RUNS_DIR)) return { reconciled: [] };
+  const reconciled: string[] = [];
+  for (const id of readdirSync(RUNS_DIR)) {
+    const m = readMeta(id);
+    if (!m || m.status !== "running") continue;
+    let note = "viewer restart detected; no live process";
+    if (typeof m.pid === "number") {
+      const alive = (() => {
+        try {
+          process.kill(m.pid!, 0); // signal 0 = 生存確認
+          return true;
+        } catch {
+          return false;
+        }
+      })();
+      if (alive) {
+        try {
+          process.kill(-m.pid, "SIGTERM");
+        } catch {
+          try {
+            process.kill(m.pid, "SIGTERM");
+          } catch {
+            /* ignore */
+          }
+        }
+        note = `viewer restart detected; orphan pid=${m.pid} SIGTERM sent`;
+        m.status = "cancelled";
+      } else {
+        m.status = "failed";
+      }
+    } else {
+      m.status = "failed";
+    }
+    m.endedAt = new Date().toISOString();
+    if (m.exitCode === undefined) m.exitCode = null;
+    writeMeta(m);
+    try {
+      appendFileSync(logPath(id), `\n[${note}]\n`);
+    } catch {
+      /* ignore */
+    }
+    reconciled.push(id);
+  }
+  return { reconciled };
 }
 
 /**
