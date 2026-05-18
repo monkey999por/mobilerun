@@ -241,6 +241,21 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--accent-dim);
   box-shadow: 0 2px 12px rgba(122, 162, 247, 0.12);
 }
+/* deterministic 自動マクロ (type=macro) は LLM 判断が入らず長尺で走るので、
+   agent 駆動の run と一目で区別できるよう枠を紫に。 */
+.cmd-card.macro {
+  border-color: #b48cff;
+  box-shadow: 0 0 0 1px rgba(180, 140, 255, 0.18);
+}
+.cmd-card.macro:hover {
+  border-color: #c8acff;
+  box-shadow: 0 2px 12px rgba(180, 140, 255, 0.28);
+}
+.cmd-card-tag.macro {
+  border-color: #b48cff;
+  color: #c8acff;
+  background: rgba(180, 140, 255, 0.10);
+}
 .cmd-card-title {
   margin: 0;
   font-size: 15px;

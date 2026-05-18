@@ -66,7 +66,8 @@ export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, 
           <span className="cmd-card-tag atomic" style={{ marginLeft: 4 }}>
             atomic
           </span>{" "}
-          tag のものは <code>.claude/skills/</code> から呼ばれる前提のパーツ
+          = skill 経由で呼ぶパーツ ·{" "}
+          <span className="cmd-card-tag macro">auto</span> = 紫枠の自動マクロ (deterministic)
         </span>
         <button className="primary" onClick={() => setEditor({ mode: "new" })}>
           + 新規
@@ -219,9 +220,17 @@ function CommandGroup({ groupName, commands, pendingId, disabledAll, onRun, onEd
             const description = c.notes || c.prompt || "";
             const preview = previewCommand(c);
             return (
-              <article key={c.id} className="cmd-card">
+              <article key={c.id} className={`cmd-card${c.type === "macro" ? " macro" : ""}`}>
                 <h3 className="cmd-card-title">
                   {c.name}
+                  {c.type === "macro" && (
+                    <span
+                      className="cmd-card-tag macro"
+                      title="deterministic な自動マクロ (mobilerun macro replay)。LLM 判断が入らず JSON 通りに長尺で走るので、agent 駆動の run と区別する。"
+                    >
+                      auto
+                    </span>
+                  )}
                   {c.tags.includes("atomic") && (
                     <span
                       className="cmd-card-tag atomic"
