@@ -96,9 +96,10 @@ app.delete("/api/commands/:id", (c) => {
 
 // --- デバイス ---
 
-app.get("/api/device", (c) => {
+app.get("/api/device", async (c) => {
   const d = getDevice();
-  return c.json({ device: d, defaultTtlSeconds: DEFAULT_TTL_SECONDS });
+  const connected = d ? await adb.isConnected(d.device).catch(() => false) : false;
+  return c.json({ device: d, connected, defaultTtlSeconds: DEFAULT_TTL_SECONDS });
 });
 
 app.post("/api/device", async (c) => {
@@ -225,6 +226,19 @@ app.post("/api/adb/disconnect", async (c) => {
   if (!body.target) return c.json({ error: "target required" }, 400);
   const res = await adb.disconnect(body.target);
   return c.json({ ok: res.ok, message: res.out });
+});
+
+app.get("/api/adb/status", async (c) => {
+  return c.json(await adb.status());
+});
+
+app.post("/api/adb/exec", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { argv?: unknown };
+  if (!Array.isArray(body.argv) || !body.argv.every((s) => typeof s === "string")) {
+    return c.json({ error: "argv: string[] required" }, 400);
+  }
+  const result = await adb.exec(body.argv as string[]);
+  return c.json(result);
 });
 
 // --- adb QR ペアリング ---

@@ -24,8 +24,8 @@ export function CommandsTab({ commands, groups, loading, onLaunched, onNeedDevic
     setErr(null);
     setPendingId(cmd.id);
     try {
-      const run = await startRun(cmd.id);
-      onLaunched(run.id);
+      const r = await startRun(cmd.id);
+      onLaunched(r.id);
     } catch (e) {
       const err = e as Error & { code?: string };
       if (err.code === "device_required") {
@@ -119,7 +119,11 @@ function CommandGroup({ groupName, commands, pendingId, onRun, onEdit }: GroupPr
             return (
               <article key={c.id} className="cmd-card">
                 <h3 className="cmd-card-title">{c.name}</h3>
-                {description && <p className="cmd-card-desc">{description}</p>}
+                {description && (
+                  <div className="cmd-card-desc-wrap" tabIndex={0}>
+                    <p className="cmd-card-desc">{description}</p>
+                  </div>
+                )}
                 <code className="cmd-card-preview" title={preview}>{preview}</code>
                 <div className="cmd-card-actions">
                   <button
@@ -131,6 +135,11 @@ function CommandGroup({ groupName, commands, pendingId, onRun, onEdit }: GroupPr
                   </button>
                   <button onClick={() => onEdit(c.id)}>編集</button>
                 </div>
+                {description && (
+                  <div className="cmd-card-desc-tooltip" role="tooltip">
+                    {description}
+                  </div>
+                )}
               </article>
             );
           })}

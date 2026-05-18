@@ -39,6 +39,22 @@ export interface AdbDiscover {
   devices: AdbDevice[];
 }
 
+export interface AdbStatus {
+  binary: string;
+  serverSocket: string | null;
+  version: string | null;
+  devices: AdbDevice[];
+  mdns: MdnsService[];
+}
+
+export interface AdbExecResult {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  argv: string[];
+}
+
 export type QrPairState =
   | "waiting_scan"
   | "pairing"

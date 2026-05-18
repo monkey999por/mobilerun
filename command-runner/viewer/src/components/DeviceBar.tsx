@@ -4,10 +4,11 @@ import { fmtRelative } from "../utils";
 
 interface Props {
   device: DeviceState | null;
+  connected: boolean;
   onChangeClick: () => void;
 }
 
-export function DeviceBar({ device, onChangeClick }: Props) {
+export function DeviceBar({ device, connected, onChangeClick }: Props) {
   const [, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 30_000);
@@ -17,6 +18,7 @@ export function DeviceBar({ device, onChangeClick }: Props) {
   if (!device) {
     return (
       <div className="device-bar">
+        <span className="device-dot off" />
         <span className="pill missing">device: 未設定</span>
         <button onClick={onChangeClick}>設定</button>
       </div>
@@ -24,9 +26,15 @@ export function DeviceBar({ device, onChangeClick }: Props) {
   }
   return (
     <div className="device-bar">
-      <span className="pill ok">device: {device.device}</span>
+      <span
+        className={`device-dot ${connected ? "on" : "missing"}`}
+        title={connected ? "接続中" : "未接続 (adb で見つからない)"}
+      />
+      <span className={`pill ${connected ? "ok" : "stale"}`}>
+        device: {device.device}
+      </span>
       <span style={{ color: "var(--text-dim)" }}>
-        失効: {fmtRelative(device.expiresAt)}
+        {connected ? "接続中" : "未接続"} · 失効 {fmtRelative(device.expiresAt)}
       </span>
       <button onClick={onChangeClick}>変更</button>
     </div>

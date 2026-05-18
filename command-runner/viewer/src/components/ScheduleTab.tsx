@@ -8,31 +8,25 @@ import {
   runScheduleNow,
 } from "../api";
 import { fmtDateTime, fmtRelative, previewCommand } from "../utils";
+import { DateTimePicker } from "./DateTimePicker";
 
 interface Props {
   commands: CommandFile[];
 }
 
-type Kind = "cron" | "once";
-
-function defaultRunAtLocalString(): string {
+function defaultRunAt(): Date {
   const d = new Date(Date.now() + 60 * 60 * 1000);
   d.setMinutes(0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return d;
 }
 
 export function ScheduleTab({ commands }: Props) {
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // フォーム state
   const [editId, setEditId] = useState<string | null>(null);
-  const [formName, setFormName] = useState("");
   const [formCommandId, setFormCommandId] = useState(commands[0]?.id ?? "");
-  const [formKind, setFormKind] = useState<Kind>("cron");
-  const [formCron, setFormCron] = useState("0 9 * * *");
-  const [formRunAt, setFormRunAt] = useState(defaultRunAtLocalString);
+  const [formRunAt, setFormRunAt] = useState<Date | null>(defaultRunAt);
   const [formDeviceOverride, setFormDeviceOverride] = useState("");
   const [formStatus, setFormStatus] = useState("");
 
@@ -62,33 +56,25 @@ export function ScheduleTab({ commands }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  // commands が後から読み込まれた時の初期化
   useEffect(() => {
     if (!formCommandId && commands[0]) setFormCommandId(commands[0].id);
   }, [commands, formCommandId]);
 
   function resetForm() {
     setEditId(null);
-    setFormName("");
-    setFormKind("cron");
-    setFormCron("0 9 * * *");
-    setFormRunAt(defaultRunAtLocalString());
+    setFormRunAt(defaultRunAt());
     setFormDeviceOverride("");
     setFormStatus("");
   }
 
   function loadIntoForm(e: ScheduleEntry) {
     setEditId(e.id);
-    setFormName(e.name);
     setFormCommandId(e.commandId);
-    setFormKind(e.kind);
-    if (e.cron) setFormCron(e.cron);
     if (e.runAt) {
       const d = new Date(e.runAt);
-      if (!Number.isNaN(d.getTime())) {
-        const pad = (n: number) => String(n).padStart(2, "0");
-        setFormRunAt(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
-      }
+      if (!Number.isNaN(d.getTime())) setFormRunAt(d);
+    } else {
+      setFormRunAt(defaultRunAt());
     }
     setFormDeviceOverride(e.deviceOverride || "");
     setFormStatus("");
@@ -99,12 +85,15 @@ export function ScheduleTab({ commands }: Props) {
       setFormStatus("コマンドを選択してください");
       return;
     }
+    if (!formRunAt) {
+      setFormStatus("実行日時を選択してください");
+      return;
+    }
     const body = {
-      name: formName.trim() || selectedCommand?.name || formCommandId,
+      name: selectedCommand?.name || formCommandId,
       commandId: formCommandId,
-      kind: formKind,
-      cron: formKind === "cron" ? formCron : undefined,
-      runAt: formKind === "once" ? new Date(formRunAt).toISOString() : undefined,
+      kind: "once" as const,
+      runAt: formRunAt.toISOString(),
       deviceOverride: formDeviceOverride.trim() || undefined,
     };
     try {
@@ -143,7 +132,6 @@ export function ScheduleTab({ commands }: Props) {
 
   return (
     <div className="sched-layout">
-      {/* 左: フォーム */}
       <section className="sched-panel">
         <h3 className="sched-panel-title">{editId ? "編集" : "新規登録"}</h3>
         <div className="sched-form">
@@ -161,46 +149,8 @@ export function ScheduleTab({ commands }: Props) {
             </select>
           </Field>
 
-          <Field label="種類">
-            <BtnGroup
-              value={formKind}
-              options={[
-                { value: "cron", label: "cron (繰り返し)" },
-                { value: "once", label: "1回限り" },
-              ]}
-              onChange={(v) => setFormKind(v as Kind)}
-            />
-          </Field>
-
-          {formKind === "cron" ? (
-            <Field label="cron 式" hint="例: 0 9 * * * = 毎朝9時 / */15 * * * * = 15分おき">
-              <input
-                type="text"
-                value={formCron}
-                onChange={(e) => setFormCron(e.target.value)}
-                placeholder="0 9 * * *"
-                style={{ width: "100%", fontFamily: "var(--mono)" }}
-              />
-            </Field>
-          ) : (
-            <Field label="実行日時 (ローカルタイム)">
-              <input
-                type="datetime-local"
-                value={formRunAt}
-                onChange={(e) => setFormRunAt(e.target.value)}
-                style={{ width: "100%" }}
-              />
-            </Field>
-          )}
-
-          <Field label="名前" hint="(任意) 省略時はコマンド名を使う">
-            <input
-              type="text"
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              placeholder={selectedCommand?.name ?? ""}
-              style={{ width: "100%" }}
-            />
+          <Field label="実行日時" hint="カレンダーから選択 (1回限り)">
+            <DateTimePicker value={formRunAt} onChange={setFormRunAt} />
           </Field>
 
           <Field label="device 上書き" hint="(任意) 空ならその時点で保存されている device を使う">
@@ -227,13 +177,12 @@ export function ScheduleTab({ commands }: Props) {
         </div>
       </section>
 
-      {/* 右: 登録済みエントリ */}
       <section className="sched-panel">
         <div className="sched-panel-header">
-          <h3 className="sched-panel-title" style={{ margin: 0 }}>登録済みエントリ</h3>
-          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>
-            {entries.length} 件
-          </span>
+          <h3 className="sched-panel-title" style={{ margin: 0 }}>
+            登録済みエントリ
+          </h3>
+          <span style={{ color: "var(--text-dim)", fontSize: 12 }}>{entries.length} 件</span>
         </div>
         {loading ? (
           <div className="empty">読み込み中...</div>
@@ -256,16 +205,12 @@ export function ScheduleTab({ commands }: Props) {
                     </span>
                   </div>
                   <div className="sched-card-meta">
-                    {e.kind === "cron" ? (
-                      <code>cron: {e.cron}</code>
-                    ) : (
-                      <code>runAt: {fmtDateTime(e.runAt)}</code>
-                    )}
+                    <code>{fmtDateTime(e.runAt)}</code>
                     {" · "}
                     {e.enabled ? (e.consumed ? "consumed" : "enabled") : "disabled"}
-                    {e.nextRunAt && (
+                    {e.nextRunAt && !e.consumed && (
                       <>
-                        {" · "}次回: {fmtDateTime(e.nextRunAt)} ({fmtRelative(e.nextRunAt)})
+                        {" · "}残り {fmtRelative(e.nextRunAt)}
                       </>
                     )}
                     {e.lastFiredAt && (
@@ -320,32 +265,6 @@ function Field({
       <label>{label}</label>
       {children}
       {hint && <span className="hint">{hint}</span>}
-    </div>
-  );
-}
-
-function BtnGroup<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div style={{ display: "flex", gap: 4 }}>
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          className={value === o.value ? "primary" : ""}
-          onClick={() => onChange(o.value)}
-          style={{ flex: 1 }}
-        >
-          {o.label}
-        </button>
-      ))}
     </div>
   );
 }

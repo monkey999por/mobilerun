@@ -7,8 +7,9 @@ import { CommandsTab } from "./components/CommandsTab";
 import { RunsTab } from "./components/RunsTab";
 import { ScheduleTab } from "./components/ScheduleTab";
 import { RunModal } from "./components/RunModal";
+import { AdbTab } from "./components/AdbTab";
 
-type Tab = "commands" | "runs" | "schedule";
+type Tab = "commands" | "runs" | "schedule" | "adb";
 
 export function App() {
   const [tab, setTab] = useState<Tab>("commands");
@@ -27,19 +28,20 @@ export function App() {
     }
   }, []);
   const [device, setDeviceState] = useState<DeviceState | null>(null);
+  const [connected, setConnected] = useState(false);
   const [defaultTtl, setDefaultTtl] = useState(8 * 60 * 60);
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const [deviceModalReason, setDeviceModalReason] = useState<string | undefined>();
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const [runsRefreshKey, setRunsRefreshKey] = useState(0);
 
-  const reloadDevice = useCallback(async () => {
+  const reloadDevice = useCallback(async (opts?: { promptIfMissing?: boolean }) => {
     try {
       const r = await fetchDevice();
       setDeviceState(r.device);
+      setConnected(r.connected);
       setDefaultTtl(r.defaultTtlSeconds);
-      // 未設定 or 期限切れ なら自動でプロンプト
-      if (!r.device) {
+      if (!r.device && opts?.promptIfMissing) {
         setDeviceModalReason("device が未設定または期限切れです。再入力してください。");
         setShowDeviceModal(true);
       }
@@ -50,11 +52,11 @@ export function App() {
 
   useEffect(() => {
     void reloadCommands();
-    void reloadDevice();
-    // 1分ごとに期限チェック
+    void reloadDevice({ promptIfMissing: true });
+    // リアルタイム接続状態チェック (5秒間隔)
     const t = setInterval(() => {
       void reloadDevice();
-    }, 60_000);
+    }, 5_000);
     return () => clearInterval(t);
   }, [reloadDevice, reloadCommands]);
 
@@ -74,6 +76,7 @@ export function App() {
         <h1>mobilerun command-runner</h1>
         <DeviceBar
           device={device}
+          connected={connected}
           onChangeClick={() => {
             setDeviceModalReason(undefined);
             setShowDeviceModal(true);
@@ -90,6 +93,9 @@ export function App() {
         <button className={`tab ${tab === "schedule" ? "active" : ""}`} onClick={() => setTab("schedule")}>
           スケジュール
         </button>
+        <button className={`tab ${tab === "adb" ? "active" : ""}`} onClick={() => setTab("adb")}>
+          ADB
+        </button>
       </div>
       <div className="body">
         {tab === "commands" && (
@@ -104,6 +110,7 @@ export function App() {
         )}
         {tab === "runs" && <RunsTab onOpen={(id) => setOpenRunId(id)} refreshKey={runsRefreshKey} />}
         {tab === "schedule" && <ScheduleTab commands={commands} />}
+        {tab === "adb" && <AdbTab />}
       </div>
       {showDeviceModal && (
         <DeviceModal

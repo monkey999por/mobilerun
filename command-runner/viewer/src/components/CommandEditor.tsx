@@ -211,108 +211,103 @@ interface SFProps {
 
 function StructuredForm({ form, patch, isNew, existingGroups }: SFProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <Row label="id (半角英数 - のみ)">
-        <input
-          value={form.id}
-          onChange={(e) => patch("id", e.target.value)}
-          disabled={!isNew}
-          placeholder="x-like-5"
-          style={{ fontFamily: "var(--mono)" }}
-        />
-      </Row>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {isNew && (
+        <Row label="id (半角英数 - のみ)">
+          <input
+            value={form.id}
+            onChange={(e) => patch("id", e.target.value)}
+            placeholder="x-like-5"
+            style={{ fontFamily: "var(--mono)" }}
+          />
+        </Row>
+      )}
       <Row label="name (表示名)">
         <input value={form.name} onChange={(e) => patch("name", e.target.value)} />
       </Row>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Row label="group (ディレクトリ名 / 空白不可, _ で代用)">
-          <input
-            value={form.group}
-            onChange={(e) => patch("group", e.target.value)}
-            placeholder="X / TikTok_Lite / にゃんこ大戦争"
-            style={{ fontFamily: "var(--mono)" }}
-            list="existing-groups"
-          />
-          <datalist id="existing-groups">
-            {existingGroups.map((g) => (
-              <option key={g} value={g} />
-            ))}
-          </datalist>
-        </Row>
-        <Row label="type">
-          <SegmentedSelect<CommandType>
-            value={form.type}
-            options={[
-              { label: "run (エージェント)", value: "run" },
-              { label: "macro (リプレイ)", value: "macro" },
-            ]}
-            onChange={(v) => patch("type", v)}
-          />
-        </Row>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Row label="status">
-          <SegmentedSelect<CommandStatus>
-            value={form.status}
-            options={[
-              { label: "confirmed", value: "confirmed" },
-              { label: "unconfirmed", value: "unconfirmed" },
-            ]}
-            onChange={(v) => patch("status", v)}
-          />
-        </Row>
-        <Row label="tags (カンマ区切り)">
-          <input
-            value={form.tags.join(", ")}
-            onChange={(e) =>
-              patch(
-                "tags",
-                e.target.value
-                  .split(",")
-                  .map((t) => t.trim())
-                  .filter(Boolean)
-              )
-            }
-            placeholder="x, like"
-            style={{ fontFamily: "var(--mono)" }}
-          />
-        </Row>
-      </div>
+      <Row label="group (ディレクトリ名 / 空白不可, _ で代用)">
+        <input
+          value={form.group}
+          onChange={(e) => patch("group", e.target.value)}
+          placeholder="X / TikTok_Lite / にゃんこ大戦争"
+          style={{ fontFamily: "var(--mono)" }}
+          list="existing-groups"
+        />
+        <datalist id="existing-groups">
+          {existingGroups.map((g) => (
+            <option key={g} value={g} />
+          ))}
+        </datalist>
+      </Row>
+      <Row label="type">
+        <SegmentedSelect<CommandType>
+          value={form.type}
+          options={[
+            { label: "run (エージェント)", value: "run" },
+            { label: "macro (リプレイ)", value: "macro" },
+          ]}
+          onChange={(v) => patch("type", v)}
+        />
+      </Row>
+      <Row label="status">
+        <SegmentedSelect<CommandStatus>
+          value={form.status}
+          options={[
+            { label: "confirmed", value: "confirmed" },
+            { label: "unconfirmed", value: "unconfirmed" },
+          ]}
+          onChange={(v) => patch("status", v)}
+        />
+      </Row>
+      <Row label="tags (カンマ区切り / 任意)">
+        <input
+          value={form.tags.join(", ")}
+          onChange={(e) =>
+            patch(
+              "tags",
+              e.target.value
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean)
+            )
+          }
+          placeholder="x, like"
+          style={{ fontFamily: "var(--mono)" }}
+        />
+      </Row>
       <Row label="notes (1行サブ説明 / 任意)">
         <input value={form.notes ?? ""} onChange={(e) => patch("notes", e.target.value || undefined)} />
       </Row>
 
       {form.type === "run" ? (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <Row label="steps">
-              <input
-                type="number"
-                value={form.steps ?? ""}
-                onChange={(e) => patch("steps", e.target.value === "" ? undefined : Number(e.target.value))}
-              />
-            </Row>
-            <Row label="vision">
-              <SegmentedSelect<boolean>
-                value={form.vision ?? false}
-                options={[
-                  { label: "ON", value: true },
-                  { label: "OFF", value: false },
-                ]}
-                onChange={(v) => patch("vision", v)}
-              />
-            </Row>
-            <Row label="reasoning">
-              <SegmentedSelect<boolean>
-                value={form.reasoning ?? false}
-                options={[
-                  { label: "ON", value: true },
-                  { label: "OFF", value: false },
-                ]}
-                onChange={(v) => patch("reasoning", v)}
-              />
-            </Row>
-          </div>
+          <Row label="steps">
+            <input
+              type="number"
+              value={form.steps ?? ""}
+              onChange={(e) => patch("steps", e.target.value === "" ? undefined : Number(e.target.value))}
+            />
+          </Row>
+          <Row label="vision">
+            <SegmentedSelect<boolean>
+              value={form.vision ?? false}
+              options={[
+                { label: "ON", value: true },
+                { label: "OFF", value: false },
+              ]}
+              onChange={(v) => patch("vision", v)}
+            />
+          </Row>
+          <Row label="reasoning">
+            <SegmentedSelect<boolean>
+              value={form.reasoning ?? false}
+              options={[
+                { label: "ON", value: true },
+                { label: "OFF", value: false },
+              ]}
+              onChange={(v) => patch("reasoning", v)}
+            />
+          </Row>
           <Row label="prompt (mobilerun run の末尾引数として渡されるプロンプト)">
             <textarea
               value={form.prompt ?? ""}
@@ -331,22 +326,20 @@ function StructuredForm({ form, patch, isNew, existingGroups }: SFProps) {
               style={{ fontFamily: "var(--mono)" }}
             />
           </Row>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <Row label="delay (ms)">
-              <input
-                type="number"
-                value={form.delay ?? ""}
-                onChange={(e) => patch("delay", e.target.value === "" ? undefined : Number(e.target.value))}
-              />
-            </Row>
-            <Row label="max_steps">
-              <input
-                type="number"
-                value={form.max_steps ?? ""}
-                onChange={(e) => patch("max_steps", e.target.value === "" ? undefined : Number(e.target.value))}
-              />
-            </Row>
-          </div>
+          <Row label="delay (ms)">
+            <input
+              type="number"
+              value={form.delay ?? ""}
+              onChange={(e) => patch("delay", e.target.value === "" ? undefined : Number(e.target.value))}
+            />
+          </Row>
+          <Row label="max_steps">
+            <input
+              type="number"
+              value={form.max_steps ?? ""}
+              onChange={(e) => patch("max_steps", e.target.value === "" ? undefined : Number(e.target.value))}
+            />
+          </Row>
           <Row label="prompt (メモ / 任意)">
             <textarea
               value={form.prompt ?? ""}

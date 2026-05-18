@@ -106,3 +106,80 @@ export async function disconnect(target: string): Promise<AdbCmdResult> {
 export function adbBin(): string {
   return ADB;
 }
+
+export function adbServerSocket(): string | undefined {
+  return process.env.ADB_SERVER_SOCKET;
+}
+
+export interface ExecResult {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  argv: string[];
+}
+
+/**
+ * 任意 adb サブコマンドを実行する (デバッグ用エンドポイントから呼ぶ)。
+ * argv の先頭は adb のサブコマンド (例: ["devices", "-l"])。
+ */
+export async function exec(argv: string[], timeoutMs = 15_000): Promise<ExecResult> {
+  if (!Array.isArray(argv) || argv.length === 0) {
+    return { ok: false, stdout: "", stderr: "argv is empty", exitCode: null, argv };
+  }
+  try {
+    const { stdout, stderr } = await execFileP(ADB, argv, { timeout: timeoutMs });
+    return { ok: true, stdout, stderr, exitCode: 0, argv };
+  } catch (e) {
+    if (e && typeof e === "object") {
+      const err = e as { stdout?: string; stderr?: string; code?: number | string; message?: string };
+      const code = typeof err.code === "number" ? err.code : null;
+      return {
+        ok: false,
+        stdout: err.stdout || "",
+        stderr: err.stderr || err.message || String(e),
+        exitCode: code,
+        argv,
+      };
+    }
+    return { ok: false, stdout: "", stderr: String(e), exitCode: null, argv };
+  }
+}
+
+export interface AdbStatus {
+  binary: string;
+  serverSocket: string | null;
+  version: string | null;
+  devices: AdbDevice[];
+  mdns: MdnsService[];
+}
+
+/**
+ * 指定 address が今 adb で「device」状態として接続中かを確認する。
+ * - 直接 serial 一致 (USB or address 形式)
+ * - mDNS の connect サービスとアドレス一致 → そのサービス名で devices をマッチ
+ */
+export async function isConnected(addr: string): Promise<boolean> {
+  if (!addr) return false;
+  const devices = await listDevices();
+  if (devices.some((d) => d.state === "device" && d.serial === addr)) return true;
+  const mdns = await listMdnsServices();
+  const match = mdns.find((m) => m.kind === "connect" && m.addr === addr);
+  if (!match) return false;
+  return devices.some((d) => d.state === "device" && d.serial.startsWith(match.name));
+}
+
+export async function status(): Promise<AdbStatus> {
+  const [versionRes, devices, mdns] = await Promise.all([
+    run(["version"]),
+    listDevices(),
+    listMdnsServices(),
+  ]);
+  return {
+    binary: ADB,
+    serverSocket: process.env.ADB_SERVER_SOCKET || null,
+    version: versionRes.ok ? versionRes.out : null,
+    devices,
+    mdns,
+  };
+}

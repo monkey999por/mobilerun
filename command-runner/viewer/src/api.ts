@@ -1,4 +1,4 @@
-import type { AdbDiscover, CommandFile, DeviceState, QrPairSession, RunMeta, ScheduleEntry } from "./types";
+import type { AdbDiscover, AdbExecResult, AdbStatus, CommandFile, DeviceState, QrPairSession, RunMeta, ScheduleEntry } from "./types";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -54,9 +54,13 @@ export async function deleteCommand(id: string): Promise<void> {
   await fetch(`/api/commands/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
-export async function fetchDevice(): Promise<{ device: DeviceState | null; defaultTtlSeconds: number }> {
+export async function fetchDevice(): Promise<{
+  device: DeviceState | null;
+  connected: boolean;
+  defaultTtlSeconds: number;
+}> {
   const r = await fetch("/api/device");
-  return await json<{ device: DeviceState | null; defaultTtlSeconds: number }>(r);
+  return await json<{ device: DeviceState | null; connected: boolean; defaultTtlSeconds: number }>(r);
 }
 
 export async function saveDevice(device: string, ttlSeconds?: number): Promise<DeviceState> {
@@ -128,6 +132,20 @@ export async function adbDisconnect(target: string): Promise<{ ok: boolean; mess
     body: JSON.stringify({ target }),
   });
   return await json<{ ok: boolean; message: string }>(r);
+}
+
+export async function fetchAdbStatus(): Promise<AdbStatus> {
+  const r = await fetch("/api/adb/status");
+  return await json<AdbStatus>(r);
+}
+
+export async function adbExec(argv: string[]): Promise<AdbExecResult> {
+  const r = await fetch("/api/adb/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ argv }),
+  });
+  return await json<AdbExecResult>(r);
 }
 
 export async function startQrPair(ttlSeconds?: number): Promise<QrPairSession> {

@@ -85,16 +85,10 @@ export function QrPairPanel({ ttlSeconds, onSuccess, onCancel }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div
-        style={{
-          background: "#fff",
-          padding: 12,
-          borderRadius: 8,
-          display: "flex",
-          justifyContent: "center",
-          maxWidth: 320,
-          margin: "0 auto",
+        className="qr-pair-svg"
+        dangerouslySetInnerHTML={{
+          __html: session?.qrSvg ?? '<div style="padding:40px;text-align:center;color:#666">QR 準備中...</div>',
         }}
-        dangerouslySetInnerHTML={{ __html: session?.qrSvg ?? "" }}
       />
       <div style={{ fontSize: 12, color: "var(--text-dim)", textAlign: "center", lineHeight: 1.6 }}>
         端末で <strong>開発者オプション → ワイヤレスデバッグ → QR コードでデバイスをペア設定</strong>{" "}
