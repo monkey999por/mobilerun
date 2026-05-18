@@ -1,6 +1,7 @@
 node_modules/
 viewer/dist/
 viewer/state/*.json
+viewer/state/runs/
 !viewer/state/.gitkeep
 logs/
 *.log
