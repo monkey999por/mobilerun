@@ -107,13 +107,33 @@ export async function adbDiscover(): Promise<AdbDiscover> {
   return await json<AdbDiscover>(r);
 }
 
-export async function adbConnect(target: string, ttlSeconds?: number): Promise<{ ok: boolean; message: string; device: DeviceState | null }> {
+export interface TcpProbeResult {
+  host: string;
+  port: number;
+  reachable: boolean;
+  latencyMs: number;
+  error?: string;
+}
+
+export async function adbConnect(
+  target: string,
+  ttlSeconds?: number
+): Promise<{ ok: boolean; message: string; device: DeviceState | null; probe?: TcpProbeResult }> {
   const r = await fetch("/api/adb/connect", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ target, ttlSeconds }),
   });
-  return await json<{ ok: boolean; message: string; device: DeviceState | null }>(r);
+  return await json<{ ok: boolean; message: string; device: DeviceState | null; probe?: TcpProbeResult }>(r);
+}
+
+export async function probeTcp(target: string): Promise<TcpProbeResult> {
+  const r = await fetch("/api/adb/probe-tcp", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target }),
+  });
+  return await json<TcpProbeResult>(r);
 }
 
 export async function adbPair(addr: string, code: string): Promise<{ ok: boolean; message: string }> {

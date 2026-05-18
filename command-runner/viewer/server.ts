@@ -211,7 +211,23 @@ app.post("/api/adb/connect", async (c) => {
   if (res.ok && body.saveAsDevice !== false) {
     setDevice(body.target, body.ttlSeconds);
   }
-  return c.json({ ok: res.ok, message: res.out, device: getDevice() });
+  // 失敗時はネットワーク到達性をチェックして UI 側で原因切り分けできるようにする。
+  // (adb のメッセージは "failed to connect to ..." とだけ言ってポート不達/TLS拒否/タイムアウトの区別がつかない)
+  let probe: adb.TcpProbeResult | undefined;
+  if (!res.ok) {
+    const hp = adb.parseHostPort(body.target);
+    if (hp) probe = await adb.probeTcp(hp.host, hp.port);
+  }
+  return c.json({ ok: res.ok, message: res.out, device: getDevice(), probe });
+});
+
+app.post("/api/adb/probe-tcp", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as { target?: string };
+  if (!body.target) return c.json({ error: "target required" }, 400);
+  const hp = adb.parseHostPort(body.target);
+  if (!hp) return c.json({ error: "target must be ip:port" }, 400);
+  const result = await adb.probeTcp(hp.host, hp.port);
+  return c.json(result);
 });
 
 app.post("/api/adb/pair", async (c) => {
