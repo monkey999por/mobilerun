@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CommandFile, CommandStatus, CommandType } from "../types";
+import type { CommandFile, CommandParameter, CommandStatus, CommandType } from "../types";
 import { createCommand, deleteCommand, fetchCommand, updateCommand } from "../api";
 import { previewCommand } from "../utils";
 
@@ -308,6 +308,12 @@ function StructuredForm({ form, patch, isNew, existingGroups }: SFProps) {
               onChange={(v) => patch("reasoning", v)}
             />
           </Row>
+          <Row label="parameters (prompt 内 {{name}} の実引数。実行時にフォームを出す)">
+            <ParametersEditor
+              value={form.parameters ?? []}
+              onChange={(v) => patch("parameters", v.length ? v : undefined)}
+            />
+          </Row>
           <Row label="prompt (mobilerun run の末尾引数として渡されるプロンプト)">
             <textarea
               value={form.prompt ?? ""}
@@ -382,6 +388,76 @@ function SegmentedSelect<T extends string | boolean>({ value, options, onChange 
           {o.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+interface ParamsEditorProps {
+  value: CommandParameter[];
+  onChange: (v: CommandParameter[]) => void;
+}
+
+function ParametersEditor({ value, onChange }: ParamsEditorProps) {
+  const patchAt = (i: number, partial: Partial<CommandParameter>) => {
+    const next = value.slice();
+    next[i] = { ...next[i], ...partial };
+    onChange(next);
+  };
+  const removeAt = (i: number) => onChange(value.filter((_, j) => j !== i));
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {value.length === 0 && (
+        <div style={{ color: "var(--text-dim)", fontSize: 12 }}>
+          (なし) — 追加すると prompt 中の <code>{`{{name}}`}</code> が実行時に置換される
+        </div>
+      )}
+      {value.map((p, i) => (
+        <div
+          key={i}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(120px, 1fr) minmax(180px, 2fr) auto auto auto",
+            gap: 6,
+            alignItems: "center",
+          }}
+        >
+          <input
+            value={p.name}
+            placeholder="name (例: reply_text)"
+            onChange={(e) => patchAt(i, { name: e.target.value })}
+            style={{ fontFamily: "var(--mono)" }}
+          />
+          <input
+            value={p.description ?? ""}
+            placeholder="description (任意)"
+            onChange={(e) => patchAt(i, { description: e.target.value || undefined })}
+          />
+          <input
+            value={p.default ?? ""}
+            placeholder="default (任意)"
+            onChange={(e) => patchAt(i, { default: e.target.value || undefined })}
+            style={{ width: 120, fontFamily: "var(--mono)" }}
+          />
+          <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+            <input
+              type="checkbox"
+              checked={p.required === true}
+              onChange={(e) => patchAt(i, { required: e.target.checked })}
+            />
+            required
+          </label>
+          <button type="button" className="danger" onClick={() => removeAt(i)}>
+            削除
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => onChange([...value, { name: "", required: false }])}
+        style={{ alignSelf: "flex-start" }}
+      >
+        + パラメータ追加
+      </button>
     </div>
   );
 }

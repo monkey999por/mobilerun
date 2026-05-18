@@ -39,6 +39,8 @@ export interface RunMeta {
   exitSignal?: string | null;
   /** スケジュール経由なら entryId */
   scheduleEntryId?: string;
+  /** 実行時に注入されたパラメータ (prompt 内 {{key}} の置換用) */
+  parameters?: Record<string, string>;
 }
 
 interface Subscriber {
@@ -85,6 +87,8 @@ export interface StartRunInput {
   commandId: string;
   device: string;
   scheduleEntryId?: string;
+  /** prompt 内 {{name}} に流し込む値。Phase 1 では string のみ。 */
+  parameters?: Record<string, string>;
 }
 
 /** 同時実行中の run があった場合に startRun が投げる error。 */
@@ -122,7 +126,7 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
     /* fallback to original */
   }
 
-  const argv = buildArgv(cmd, resolvedDevice);
+  const argv = buildArgv(cmd, resolvedDevice, input.parameters);
   const meta: RunMeta = {
     id,
     commandId: cmd.id,
@@ -132,6 +136,7 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
     status: "running",
     startedAt: new Date().toISOString(),
     scheduleEntryId: input.scheduleEntryId,
+    parameters: input.parameters,
   };
   writeFileSync(logPath(id), `$ ${shellQuote(["mobilerun", ...argv])}\n`);
   writeMeta(meta);

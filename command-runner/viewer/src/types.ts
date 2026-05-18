@@ -3,6 +3,13 @@ export type CommandStatus = "confirmed" | "unconfirmed";
 
 export const UNGROUPED = "(未分類)";
 
+export interface CommandParameter {
+  name: string;
+  description?: string;
+  required?: boolean;
+  default?: string;
+}
+
 export interface CommandFile {
   id: string;
   group: string;
@@ -18,6 +25,7 @@ export interface CommandFile {
   delay?: number;
   max_steps?: number;
   prompt?: string;
+  parameters?: CommandParameter[];
 }
 
 export type MdnsKind = "pairing" | "connect" | "other";
@@ -99,6 +107,7 @@ export interface RunMeta {
   exitCode?: number | null;
   exitSignal?: string | null;
   scheduleEntryId?: string;
+  parameters?: Record<string, string>;
 }
 
 export type ScheduleKind = "cron" | "once";

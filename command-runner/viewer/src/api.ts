@@ -77,11 +77,14 @@ export async function clearDevice(): Promise<void> {
   await fetch("/api/device", { method: "DELETE" });
 }
 
-export async function startRun(commandId: string): Promise<RunMeta> {
+export async function startRun(
+  commandId: string,
+  parameters?: Record<string, string>,
+): Promise<RunMeta> {
   const r = await fetch("/api/runs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ commandId }),
+    body: JSON.stringify({ commandId, parameters }),
   });
   const data = await json<{ run: RunMeta }>(r);
   return data.run;

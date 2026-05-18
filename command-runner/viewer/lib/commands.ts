@@ -33,6 +33,17 @@ export const UNGROUPED = "(未分類)";
 export type CommandType = "run" | "macro";
 export type CommandStatus = "confirmed" | "unconfirmed";
 
+/**
+ * 実行時に値を埋め込むパラメータ。YAML に書いた {{name}} を実引数で置換する。
+ * Phase 1 では文字列のみ扱い、prompt 内の {{name}} → value で textual replace。
+ */
+export interface CommandParameter {
+  name: string;
+  description?: string;
+  required?: boolean;
+  default?: string;
+}
+
 export interface CommandFile {
   id: string;
   group: string;
@@ -50,9 +61,12 @@ export interface CommandFile {
   macro_file?: string;
   delay?: number;
   max_steps?: number;
+  /** 実行時に値を渡すパラメータ (Phase 1: prompt の {{name}} 置換用) */
+  parameters?: CommandParameter[];
 }
 
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const PARAM_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
 // グループ (ディレクトリ名): スラッシュ・バックスラッシュ・NUL・空白を禁止。`_` は OK
 const GROUP_PATTERN = /^[^\s/\\\x00]+$/;
 
@@ -107,6 +121,29 @@ function walk(): FoundFile[] {
   return out;
 }
 
+function normalizeParameters(raw: unknown): CommandParameter[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: CommandParameter[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const obj = item as Record<string, unknown>;
+    const name = typeof obj.name === "string" ? obj.name : "";
+    if (!PARAM_NAME_PATTERN.test(name)) {
+      throw new Error(`invalid parameter name: ${name}`);
+    }
+    if (seen.has(name)) throw new Error(`duplicate parameter name: ${name}`);
+    seen.add(name);
+    out.push({
+      name,
+      description: typeof obj.description === "string" ? obj.description : undefined,
+      required: obj.required === true,
+      default: typeof obj.default === "string" ? obj.default : undefined,
+    });
+  }
+  return out.length ? out : undefined;
+}
+
 function normalize(data: Record<string, unknown>, group: string): CommandFile {
   const id = String(data.id || "");
   if (!isValidId(id)) throw new Error(`invalid id: ${id}`);
@@ -126,6 +163,7 @@ function normalize(data: Record<string, unknown>, group: string): CommandFile {
     macro_file: data.macro_file != null ? String(data.macro_file) : undefined,
     delay: typeof data.delay === "number" ? data.delay : undefined,
     max_steps: typeof data.max_steps === "number" ? data.max_steps : undefined,
+    parameters: normalizeParameters(data.parameters),
   };
 }
 
@@ -214,6 +252,15 @@ function dataForSave(cmd: CommandFile): Record<string, unknown> {
     if (cmd.delay != null) data.delay = cmd.delay;
     if (cmd.max_steps != null) data.max_steps = cmd.max_steps;
   }
+  if (cmd.parameters && cmd.parameters.length) {
+    data.parameters = cmd.parameters.map((p) => {
+      const item: Record<string, unknown> = { name: p.name };
+      if (p.description) item.description = p.description;
+      if (p.required) item.required = true;
+      if (p.default != null) item.default = p.default;
+      return item;
+    });
+  }
   if (cmd.prompt) data.prompt = cmd.prompt;
   return data;
 }
@@ -298,17 +345,60 @@ function cleanupEmptyGroupDir(group: string): void {
 }
 
 /**
- * mobilerun に渡す argv を返す。最初の要素はバイナリ名 (mobilerun)。
+ * cmd.parameters の定義に対して与えられた値を検証し、欠落を default で埋める。
+ * required で値も default も無い場合は throw。未定義パラメータが渡された場合は警告せず無視する
+ * (skill 経由で柔軟に渡せるようにするため)。
  */
-export function buildArgv(cmd: CommandFile, device: string): string[] {
+export function resolveParameters(
+  cmd: CommandFile,
+  given: Record<string, string> | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!cmd.parameters?.length) return out;
+  for (const p of cmd.parameters) {
+    const v = given?.[p.name];
+    if (v != null && v !== "") {
+      out[p.name] = v;
+      continue;
+    }
+    if (p.default != null) {
+      out[p.name] = p.default;
+      continue;
+    }
+    if (p.required) {
+      throw new Error(`missing required parameter: ${p.name}`);
+    }
+    out[p.name] = "";
+  }
+  return out;
+}
+
+/** prompt 内の {{name}} を values で置換する。未定義キーはそのまま残す。 */
+export function substitutePrompt(prompt: string, values: Record<string, string>): string {
+  return prompt.replace(/\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g, (m, name: string) => {
+    return Object.prototype.hasOwnProperty.call(values, name) ? values[name] : m;
+  });
+}
+
+/**
+ * mobilerun に渡す argv を返す。最初の要素はバイナリ名 (mobilerun)。
+ * params が渡されたら prompt の {{name}} を置換する。
+ */
+export function buildArgv(
+  cmd: CommandFile,
+  device: string,
+  params?: Record<string, string>,
+): string[] {
   if (!device) throw new Error("device is required");
   if (cmd.type === "run") {
     if (!cmd.prompt) throw new Error(`command ${cmd.id}: prompt required for run type`);
+    const values = resolveParameters(cmd, params);
+    const prompt = substitutePrompt(cmd.prompt, values);
     const args = ["run", "--device", device];
     if (cmd.vision) args.push("--vision");
     if (cmd.reasoning) args.push("--reasoning");
     if (typeof cmd.steps === "number") args.push("--steps", String(cmd.steps));
-    args.push(cmd.prompt);
+    args.push(prompt);
     return args;
   }
   if (!cmd.macro_file) throw new Error(`command ${cmd.id}: macro_file required for macro type`);
