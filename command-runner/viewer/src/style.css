@@ -241,20 +241,25 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--accent-dim);
   box-shadow: 0 2px 12px rgba(122, 162, 247, 0.12);
 }
-/* deterministic 自動マクロ (type=macro) は LLM 判断が入らず長尺で走るので、
-   agent 駆動の run と一目で区別できるよう枠を紫に。 */
-.cmd-card.macro {
+/* 枠色で「viewer から単体実行する意味があるか」を表現する。
+   緑 = ユーザが viewer から直接叩いて意味がある (実行可能)。
+   紫 = atomic タグ。Claude Code skill から連鎖呼び出しされる前提なので、
+        viewer 上では単体実行不要。 */
+.cmd-card.runnable {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 1px rgba(158, 206, 106, 0.16);
+}
+.cmd-card.runnable:hover {
+  border-color: var(--ok);
+  box-shadow: 0 2px 12px rgba(158, 206, 106, 0.28);
+}
+.cmd-card.skill-only {
   border-color: #b48cff;
   box-shadow: 0 0 0 1px rgba(180, 140, 255, 0.18);
 }
-.cmd-card.macro:hover {
+.cmd-card.skill-only:hover {
   border-color: #c8acff;
   box-shadow: 0 2px 12px rgba(180, 140, 255, 0.28);
-}
-.cmd-card-tag.macro {
-  border-color: #b48cff;
-  color: #c8acff;
-  background: rgba(180, 140, 255, 0.10);
 }
 .cmd-card-title {
   margin: 0;
@@ -281,9 +286,9 @@ input:focus, select:focus, textarea:focus {
   text-transform: lowercase;
 }
 .cmd-card-tag.atomic {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(122, 162, 247, 0.08);
+  border-color: #b48cff;
+  color: #c8acff;
+  background: rgba(180, 140, 255, 0.10);
   cursor: help;
 }
 .cmd-card-desc-wrap {

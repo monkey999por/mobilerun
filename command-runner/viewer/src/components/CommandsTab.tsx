@@ -63,11 +63,8 @@ export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <span style={{ color: "var(--text-dim)", fontSize: 12 }}>
           {commands.length} 件 · {orderedGroups.length} グループ ·{" "}
-          <span className="cmd-card-tag atomic" style={{ marginLeft: 4 }}>
-            atomic
-          </span>{" "}
-          = skill 経由で呼ぶパーツ ·{" "}
-          <span className="cmd-card-tag macro">auto</span> = 紫枠の自動マクロ (deterministic)
+          <span style={{ color: "var(--ok)" }}>緑枠</span> = viewer から実行可能 ·{" "}
+          <span style={{ color: "#c8acff" }}>紫枠</span> = skill 経由で呼ぶ atomic (単体実行不要)
         </span>
         <button className="primary" onClick={() => setEditor({ mode: "new" })}>
           + 新規
@@ -220,21 +217,16 @@ function CommandGroup({ groupName, commands, pendingId, disabledAll, onRun, onEd
             const description = c.notes || c.prompt || "";
             const preview = previewCommand(c);
             return (
-              <article key={c.id} className={`cmd-card${c.type === "macro" ? " macro" : ""}`}>
+              <article
+                key={c.id}
+                className={`cmd-card ${c.tags.includes("atomic") ? "skill-only" : "runnable"}`}
+              >
                 <h3 className="cmd-card-title">
                   {c.name}
-                  {c.type === "macro" && (
-                    <span
-                      className="cmd-card-tag macro"
-                      title="deterministic な自動マクロ (mobilerun macro replay)。LLM 判断が入らず JSON 通りに長尺で走るので、agent 駆動の run と区別する。"
-                    >
-                      auto
-                    </span>
-                  )}
                   {c.tags.includes("atomic") && (
                     <span
                       className="cmd-card-tag atomic"
-                      title="このコマンドは Claude Code の skill (.claude/skills/*/SKILL.md) から呼ばれる前提の atomic です。viewer で単体実行も可能だが、通常は skill 経由で連鎖実行されます。"
+                      title="viewer 単体実行は不要。Claude Code skill (.claude/skills/*/SKILL.md) から連鎖呼び出しされる前提のパーツです。"
                     >
                       atomic
                     </span>
