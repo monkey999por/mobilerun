@@ -183,6 +183,9 @@ export function DeviceModal({ current, defaultTtlSeconds, reason, onSaved, onCan
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ minWidth: 520 }}>
         <h2>デバイス選択</h2>
+        <div className="notice" style={{ fontWeight: 600 }}>
+          WSL2 環境では「手動入力」タブからのペアリング接続のみ可能です（mDNS / QR は使えません）。
+        </div>
         {reason && <div className="notice">{reason}</div>}
 
         <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
