@@ -1,0 +1,24 @@
+id: x-open-trending
+name: X 検索→トレンド/話題タブ
+type: run
+steps: 10
+vision: true
+reasoning: true
+status: unconfirmed
+tags:
+  - x
+  - atomic
+  - trending
+notes: アトミック - X の検索 (Explore) 画面のトレンド一覧 (For you / Trending) を開いた状態で停止。続けて x-trending-pick-and-reply skill 等で個別投稿に進む
+prompt: |
+  X アプリで「いま話題」(For you / Trending) の一覧が見える状態にして停止してください。
+
+  ## 手順
+  1. 画面下部のタブから『検索』(虫眼鏡アイコン) をタップ
+  2. 検索画面で上部タブ『For you』『話題』『Trending』のいずれかが選ばれていることを確認 (デフォルトでこの状態が多い)
+  3. もし検索ボックスが入力モードになっていたらシステムバックで閉じる
+  4. トレンドカード/ハッシュタグ/関連投稿のリストが画面に見えるところで停止
+  5. 画面上に見えているトレンドの上位 3 件 (トピック名 / 関連投稿件数 など) を報告して終了
+
+  ## 絶対禁止
+  - 個別投稿の詳細やいいね・リプライなどの操作はしない (純粋にナビゲーションのみ)
