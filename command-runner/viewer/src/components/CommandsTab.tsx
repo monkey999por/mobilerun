@@ -8,6 +8,7 @@ interface Props {
   commands: CommandFile[];
   groups: string[];
   loading: boolean;
+  activeRun: { id: string; commandName: string } | null;
   onLaunched: (runId: string) => void;
   onNeedDevice: () => void;
   onCommandsChanged: () => void;
@@ -15,7 +16,7 @@ interface Props {
 
 type EditorState = { mode: "edit"; id: string } | { mode: "new" } | null;
 
-export function CommandsTab({ commands, groups, loading, onLaunched, onNeedDevice, onCommandsChanged }: Props) {
+export function CommandsTab({ commands, groups, loading, activeRun, onLaunched, onNeedDevice, onCommandsChanged }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [editor, setEditor] = useState<EditorState>(null);
@@ -57,6 +58,11 @@ export function CommandsTab({ commands, groups, loading, onLaunched, onNeedDevic
         </button>
       </div>
       {err && <div className="notice">{err}</div>}
+      {activeRun && (
+        <div className="notice" style={{ fontWeight: 600 }}>
+          現在「{activeRun.commandName}」が実行中のため、終了するまで別コマンドは実行できません。
+        </div>
+      )}
       {loading ? (
         <div className="empty">読み込み中...</div>
       ) : commands.length === 0 ? (
@@ -69,6 +75,7 @@ export function CommandsTab({ commands, groups, loading, onLaunched, onNeedDevic
               groupName={g}
               commands={byGroup.get(g) ?? []}
               pendingId={pendingId}
+              disabledAll={activeRun !== null}
               onRun={(c) => void run(c)}
               onEdit={(id) => setEditor({ mode: "edit", id })}
             />
@@ -98,11 +105,12 @@ interface GroupProps {
   groupName: string;
   commands: CommandFile[];
   pendingId: string | null;
+  disabledAll: boolean;
   onRun: (c: CommandFile) => void;
   onEdit: (id: string) => void;
 }
 
-function CommandGroup({ groupName, commands, pendingId, onRun, onEdit }: GroupProps) {
+function CommandGroup({ groupName, commands, pendingId, disabledAll, onRun, onEdit }: GroupProps) {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <section className="cmd-group">
@@ -128,7 +136,7 @@ function CommandGroup({ groupName, commands, pendingId, onRun, onEdit }: GroupPr
                 <div className="cmd-card-actions">
                   <button
                     className="primary"
-                    disabled={pendingId === c.id}
+                    disabled={pendingId === c.id || disabledAll}
                     onClick={() => onRun(c)}
                   >
                     {pendingId === c.id ? "起動中..." : "実行"}

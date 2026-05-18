@@ -129,6 +129,7 @@ export function App() {
             commands={commands}
             groups={groups}
             loading={commandsLoading}
+            activeRun={runningRuns[0] ?? null}
             onLaunched={onLaunched}
             onNeedDevice={onNeedDevice}
             onCommandsChanged={() => void reloadCommands()}

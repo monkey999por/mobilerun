@@ -26,7 +26,17 @@ import {
   type CommandFile,
 } from "./lib/commands.ts";
 import { getDevice, setDevice, clearDevice, DEFAULT_TTL_SECONDS } from "./lib/device.ts";
-import { startRun, listRuns, readMeta, readLog, subscribe, cancelRun, isRunning } from "./lib/runs.ts";
+import {
+  startRun,
+  listRuns,
+  readMeta,
+  readLog,
+  subscribe,
+  cancelRun,
+  isRunning,
+  listRunningIds,
+  RunInProgressError,
+} from "./lib/runs.ts";
 import * as adb from "./lib/adb.ts";
 import * as qrPair from "./lib/qr-pair.ts";
 import * as scheduler from "./scheduler.ts";
@@ -125,12 +135,18 @@ app.post("/api/runs", async (c) => {
     const meta = await startRun({ commandId: body.commandId, device: d.device });
     return c.json({ run: meta });
   } catch (err) {
+    if (err instanceof RunInProgressError) {
+      return c.json(
+        { error: err.message, code: err.code, activeRunId: err.activeRunId },
+        409,
+      );
+    }
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
   }
 });
 
 app.get("/api/runs", (c) => {
-  return c.json({ runs: listRuns() });
+  return c.json({ runs: listRuns(), activeRunIds: listRunningIds() });
 });
 
 app.get("/api/runs/:id", (c) => {
