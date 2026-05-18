@@ -1,0 +1,14 @@
+id: x-scroll-one
+name: X 1スクロール
+type: run
+steps: 3
+vision: false
+reasoning: false
+status: unconfirmed
+tags:
+  - x
+  - atomic
+notes: アトミック - 表示中の TL を1回だけ下方向にスクロール
+prompt: |
+  現在表示中の X のタイムラインを画面 1 枚分だけ下にスクロールしてください。スクロール後の最上位投稿の投稿者名と本文先頭 20 文字程度を報告して終了します。
+  追加のアクション (タップ・いいね等) は絶対にしない。
