@@ -1,6 +1,9 @@
 ---
 name: x-trending-reply
-description: いま X で「バズっている」投稿を WebSearch または X 内検索で探し、選んだ投稿にリプライを送る。リプライ文は Claude が生成して x-reply-topmost atomic に parameters で渡す。
+description: いま X で「バズっている」投稿を WebSearch か X 内 Trending で探し、選んだ投稿に Claude が生成したリプライを送る。x-reply-topmost atomic に parameters でリプライ文を渡す。
+when_to_use: 「X でバズってる投稿にリプライ」「トレンドにリプライしといて」のように、対象が事前に決まっていない・話題から拾って欲しい時。
+argument-hint: "[topic-hint] [n_replies]"
+allowed-tools: Bash(curl *) Bash(jq *) Bash(sleep *) WebSearch
 ---
 
 # x-trending-reply

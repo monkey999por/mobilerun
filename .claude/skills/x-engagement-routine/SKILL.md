@@ -1,6 +1,8 @@
 ---
 name: x-engagement-routine
-description: X (Twitter) で 1 セッション分のエンゲージメント (いいね 5 + リプライ 3) を実行。リプライ文は Claude が投稿本文から生成して atomic コマンドに parameters で渡す。
+description: X (Twitter) で 1 セッション分のエンゲージメント (いいね 5 件 + リプライ 3 件) を一気通貫で実行。リプライ文は Claude が投稿本文から生成して atomic に parameters で渡す。
+when_to_use: 「X 巡回」「いいね＆リプライ」「engagement」など、いいねとリプライを同じセッションでまとめてしたい時。いいねだけなら x-like-spree、リプライだけなら x-trending-reply を選ぶ。
+allowed-tools: Bash(curl *) Bash(jq *) Bash(sleep *)
 ---
 
 # x-engagement-routine

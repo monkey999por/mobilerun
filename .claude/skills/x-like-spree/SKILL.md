@@ -1,6 +1,8 @@
 ---
 name: x-like-spree
-description: X (Twitter) のタイムラインで未いいねの通常投稿に順番にいいねを 5 件付ける。command-runner viewer の atomic コマンドを順に呼び出すオーケストレーション。
+description: X (Twitter) のおすすめタイムラインで未いいねの通常投稿に上から順にいいねを 5 件付ける。「X でいいねしといて」「いいね 5 件」「like-spree」等のリクエストで起動。
+when_to_use: ユーザーが X / Twitter で複数件のいいねをまとめて付けたいと言った時。1 件単独なら mobilerun の x-like-topmost-unliked を直接呼べばよいので使わない。
+allowed-tools: Bash(curl *) Bash(jq *) Bash(sleep *)
 ---
 
 # x-like-spree
