@@ -32,6 +32,11 @@ export interface RunMeta {
   startedAt: string;
   endedAt?: string;
   exitCode?: number | null;
+  /**
+   * 子プロセスがシグナルで死亡した場合の signal 名 (SIGTERM 等)。code=null かつ
+   * signal がセットされていれば、誰かに kill されたことを意味する。原因切り分け用。
+   */
+  exitSignal?: string | null;
   /** スケジュール経由なら entryId */
   scheduleEntryId?: string;
 }
@@ -143,13 +148,16 @@ export async function startRun(input: StartRunInput): Promise<RunMeta> {
   child.on("error", (err) => {
     emitLog(id, `\n[spawn error] ${err.message}\n`);
   });
-  child.on("close", (code) => {
+  child.on("close", (code, signal) => {
     running.delete(id);
     meta.status = code === 0 ? "success" : meta.status === "cancelled" ? "cancelled" : "failed";
     meta.exitCode = code;
+    meta.exitSignal = signal;
     meta.endedAt = new Date().toISOString();
     writeMeta(meta);
-    emitLog(id, `\n[exit ${code}]\n`);
+    // signal が入っていれば外部からの kill。原因 (tsx watch リロード / OOM /
+    // concurrently -k による兄弟プロセス連鎖死亡 / 親 PG への SIGHUP 等) を切り分ける材料。
+    emitLog(id, `\n[exit ${code}${signal ? ` signal=${signal}` : ""}]\n`);
     emitEnd(meta);
   });
 
@@ -213,6 +221,22 @@ export function isRunning(id: string): boolean {
 
 export function listRunningIds(): string[] {
   return [...running.keys()];
+}
+
+/**
+ * viewer プロセス自身が SIGTERM/SIGHUP/SIGINT を受けた時に、active な子プロセスの log
+ * 末尾に「viewer がシグナル X を受けた」と書き込んでから forward する。これにより、
+ * "exit null" 単独では分からなかった原因 (tsx watch リロード / concurrently -k / 親 PG
+ * SIGHUP / docker stop など) を log から事後特定できる。
+ */
+export function annotateViewerSignal(signal: NodeJS.Signals): void {
+  for (const id of running.keys()) {
+    try {
+      emitLog(id, `\n[viewer received ${signal}; forwarding to child]\n`);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 function shellQuote(parts: string[]): string {

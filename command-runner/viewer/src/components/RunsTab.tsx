@@ -65,7 +65,14 @@ export function RunsTab({ onOpen, refreshKey }: Props) {
             <td style={{ fontFamily: "var(--mono)", fontSize: 12 }}>{r.device}</td>
             <td className={`status-${r.status}`}>{r.status}</td>
             <td>{fmtDuration(r.startedAt, r.endedAt)}</td>
-            <td>{r.exitCode ?? "-"}</td>
+            <td>
+              {r.exitCode ?? "-"}
+              {r.exitSignal && (
+                <span style={{ color: "var(--warn)", marginLeft: 6, fontSize: 11 }}>
+                  {r.exitSignal}
+                </span>
+              )}
+            </td>
             <td style={{ color: "var(--text-dim)", fontSize: 12 }}>
               {r.scheduleEntryId ? "schedule" : "manual"}
             </td>
