@@ -46,9 +46,13 @@ services:
       - TZ=Asia/Tokyo
       - ADB_BIN=adb
       - MOBILERUN_BIN=mobilerun
-      # adb クライアントはホストの adb サーバーに接続させる (mDNS 探索のため)
-      # 事前にホストで `adb -a -P 5037 nodaemon server start &` を一度実行しておくこと
+      # adb クライアント (CLI / Python lib 両方) をホストの adb サーバーに接続させる。
+      # 事前にホストで `adb -a -P 5037 nodaemon server start &` を一度実行しておくこと。
+      # - ADB_SERVER_SOCKET: 公式 adb バイナリが見る
+      # - ANDROID_ADB_SERVER_HOST/PORT: mobilerun が使う async_adbutils など Python 系が見る
       - ADB_SERVER_SOCKET=tcp:host.docker.internal:5037
+      - ANDROID_ADB_SERVER_HOST=host.docker.internal
+      - ANDROID_ADB_SERVER_PORT=5037
     # Linux でも host.docker.internal を解決させる
     extra_hosts:
       - "host.docker.internal:host-gateway"

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { RunMeta } from "../types";
-import { fetchRuns } from "../api";
+import { cancelRun, fetchRuns } from "../api";
 import { fmtDateTime, fmtDuration } from "../utils";
 
 interface Props {
@@ -11,26 +11,34 @@ interface Props {
 export function RunsTab({ onOpen, refreshKey }: Props) {
   const [runs, setRuns] = useState<RunMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setRuns(await fetchRuns());
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const list = await fetchRuns();
-        if (!cancelled) setRuns(list);
-      } catch {
-        /* ignore */
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
     void load();
     const t = setInterval(load, 5_000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
-  }, [refreshKey]);
+    return () => clearInterval(t);
+  }, [load, refreshKey]);
+
+  async function onCancel(id: string) {
+    if (!confirm("実行を中断しますか？")) return;
+    setCancellingId(id);
+    try {
+      await cancelRun(id);
+      await load();
+    } finally {
+      setCancellingId(null);
+    }
+  }
 
   if (loading) return <div className="empty">読み込み中...</div>;
   if (runs.length === 0) return <div className="empty">実行履歴なし</div>;
@@ -46,6 +54,7 @@ export function RunsTab({ onOpen, refreshKey }: Props) {
           <th>所要</th>
           <th>exit</th>
           <th>経路</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -59,6 +68,17 @@ export function RunsTab({ onOpen, refreshKey }: Props) {
             <td>{r.exitCode ?? "-"}</td>
             <td style={{ color: "var(--text-dim)", fontSize: 12 }}>
               {r.scheduleEntryId ? "schedule" : "manual"}
+            </td>
+            <td onClick={(e) => e.stopPropagation()} style={{ textAlign: "right" }}>
+              {r.status === "running" && (
+                <button
+                  className="danger"
+                  disabled={cancellingId === r.id}
+                  onClick={() => void onCancel(r.id)}
+                >
+                  {cancellingId === r.id ? "中断中..." : "中断"}
+                </button>
+              )}
             </td>
           </tr>
         ))}

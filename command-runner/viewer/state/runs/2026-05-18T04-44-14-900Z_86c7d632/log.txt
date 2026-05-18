@@ -1,0 +1,466 @@
+$ mobilerun macro replay /app/macros/tiktok_lite_scroll3000.json -d 100.64.1.47:46689 --delay 0 --max-steps 2002
+🎬 Mobilerun Macro Replay
+📱 Using device: 100.64.1.47:46689
+📄 Loading macro from file: /app/macros/tiktok_lite_scroll3000.json
+📋 Macro Information:
+   Description: Open TikTok Lite and swipe to next video 3000 times
+   Version: 1.0
+   Total actions: 6001
+   Device: 100.64.1.47:46689
+   Delay between actions: 0.0s
+   Maximum steps: 2002
+▶️  Starting macro replay...
+🎯 Limiting to 2002 steps
+🎬 Starting macro replay: 'Open TikTok Lite and swipe to next video 3000 times'
+📊 Total actions to execute: 2002 / 6001
+
+📍 Step 1/6001: start_app
+   Description: Launch TikTok Lite
+🤖 Initialized driver for device: 100.64.1.47:46689
+   ✅ Action completed successfully
+
+📍 Step 2/6001: wait
+   Description: Wait for app to load
+⏳ Waiting for 5.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 3/6001: wait
+   Description: Watch video 1
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 4/6001: swipe
+   Description: Next video (1->2)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 5/6001: wait
+   Description: Watch video 2
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 6/6001: swipe
+   Description: Next video (2->3)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 7/6001: wait
+   Description: Watch video 3
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 8/6001: swipe
+   Description: Next video (3->4)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 9/6001: wait
+   Description: Watch video 4
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 10/6001: swipe
+   Description: Next video (4->5)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 11/6001: wait
+   Description: Watch video 5
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 12/6001: swipe
+   Description: Next video (5->6)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 13/6001: wait
+   Description: Watch video 6
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 14/6001: swipe
+   Description: Next video (6->7)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 15/6001: wait
+   Description: Watch video 7
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 16/6001: swipe
+   Description: Next video (7->8)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 17/6001: wait
+   Description: Watch video 8
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 18/6001: swipe
+   Description: Next video (8->9)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 19/6001: wait
+   Description: Watch video 9
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 20/6001: swipe
+   Description: Next video (9->10)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 21/6001: wait
+   Description: Watch video 10
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 22/6001: swipe
+   Description: Next video (10->11)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 23/6001: wait
+   Description: Watch video 11
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 24/6001: swipe
+   Description: Next video (11->12)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 25/6001: wait
+   Description: Watch video 12
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 26/6001: swipe
+   Description: Next video (12->13)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 27/6001: wait
+   Description: Watch video 13
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 28/6001: swipe
+   Description: Next video (13->14)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 29/6001: wait
+   Description: Watch video 14
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 30/6001: swipe
+   Description: Next video (14->15)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 31/6001: wait
+   Description: Watch video 15
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 32/6001: swipe
+   Description: Next video (15->16)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 33/6001: wait
+   Description: Watch video 16
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 34/6001: swipe
+   Description: Next video (16->17)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 35/6001: wait
+   Description: Watch video 17
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 36/6001: swipe
+   Description: Next video (17->18)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 37/6001: wait
+   Description: Watch video 18
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 38/6001: swipe
+   Description: Next video (18->19)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 39/6001: wait
+   Description: Watch video 19
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 40/6001: swipe
+   Description: Next video (19->20)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 41/6001: wait
+   Description: Watch video 20
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 42/6001: swipe
+   Description: Next video (20->21)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 43/6001: wait
+   Description: Watch video 21
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 44/6001: swipe
+   Description: Next video (21->22)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 45/6001: wait
+   Description: Watch video 22
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 46/6001: swipe
+   Description: Next video (22->23)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 47/6001: wait
+   Description: Watch video 23
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 48/6001: swipe
+   Description: Next video (23->24)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 49/6001: wait
+   Description: Watch video 24
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 50/6001: swipe
+   Description: Next video (24->25)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 51/6001: wait
+   Description: Watch video 25
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 52/6001: swipe
+   Description: Next video (25->26)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 53/6001: wait
+   Description: Watch video 26
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 54/6001: swipe
+   Description: Next video (26->27)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 55/6001: wait
+   Description: Watch video 27
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 56/6001: swipe
+   Description: Next video (27->28)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 57/6001: wait
+   Description: Watch video 28
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 58/6001: swipe
+   Description: Next video (28->29)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 59/6001: wait
+   Description: Watch video 29
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 60/6001: swipe
+   Description: Next video (29->30)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 61/6001: wait
+   Description: Watch video 30
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 62/6001: swipe
+   Description: Next video (30->31)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 63/6001: wait
+   Description: Watch video 31
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 64/6001: swipe
+   Description: Next video (31->32)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 65/6001: wait
+   Description: Watch video 32
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 66/6001: swipe
+   Description: Next video (32->33)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 67/6001: wait
+   Description: Watch video 33
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 68/6001: swipe
+   Description: Next video (33->34)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 69/6001: wait
+   Description: Watch video 34
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 70/6001: swipe
+   Description: Next video (34->35)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 71/6001: wait
+   Description: Watch video 35
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 72/6001: swipe
+   Description: Next video (35->36)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 73/6001: wait
+   Description: Watch video 36
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 74/6001: swipe
+   Description: Next video (36->37)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 75/6001: wait
+   Description: Watch video 37
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 76/6001: swipe
+   Description: Next video (37->38)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 77/6001: wait
+   Description: Watch video 38
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 78/6001: swipe
+   Description: Next video (38->39)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 79/6001: wait
+   Description: Watch video 39
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 80/6001: swipe
+   Description: Next video (39->40)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 81/6001: wait
+   Description: Watch video 40
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 82/6001: swipe
+   Description: Next video (40->41)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 83/6001: wait
+   Description: Watch video 41
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 84/6001: swipe
+   Description: Next video (41->42)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 85/6001: wait
+   Description: Watch video 42
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 86/6001: swipe
+   Description: Next video (42->43)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 87/6001: wait
+   Description: Watch video 43
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 88/6001: swipe
+   Description: Next video (43->44)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+   ✅ Action completed successfully
+
+📍 Step 89/6001: wait
+   Description: Watch video 44
+⏳ Waiting for 3.0 seconds
+   ✅ Action completed successfully
+
+📍 Step 90/6001: swipe
+   Description: Next video (44->45)
+👆 Swiping from (540, 1800) to (540, 600) in 250ms
+
+[exit null]

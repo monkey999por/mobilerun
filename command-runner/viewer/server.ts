@@ -122,7 +122,7 @@ app.post("/api/runs", async (c) => {
   const d = getDevice();
   if (!d) return c.json({ error: "device not set or expired", code: "device_required" }, 409);
   try {
-    const meta = startRun({ commandId: body.commandId, device: d.device });
+    const meta = await startRun({ commandId: body.commandId, device: d.device });
     return c.json({ run: meta });
   } catch (err) {
     return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);

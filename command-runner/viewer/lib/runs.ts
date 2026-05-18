@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 import { spawn, ChildProcessWithoutNullStreams } from "node:child_process";
 import { getCommand, buildArgv, PROJECT_ROOT, type CommandFile } from "./commands.ts";
+import { resolveSerial } from "./adb.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const STATE_DIR = resolve(__dirname, "../state");
@@ -81,7 +82,7 @@ export interface StartRunInput {
   scheduleEntryId?: string;
 }
 
-export function startRun(input: StartRunInput): RunMeta {
+export async function startRun(input: StartRunInput): Promise<RunMeta> {
   const cmd = getCommand(input.commandId);
   if (!cmd) throw new Error(`unknown command: ${input.commandId}`);
   if (!input.device) throw new Error("device is required");
@@ -91,7 +92,17 @@ export function startRun(input: StartRunInput): RunMeta {
   const dir = runDir(id);
   mkdirSync(dir, { recursive: true });
 
-  const argv = buildArgv(cmd, input.device);
+  // Android 11+ の TLS 接続では adb の serial が mDNS 名で、ip:port では引けない。
+  // device.json は表示用に ip:port を保持しつつ、ここで実 serial に変換して mobilerun に渡す
+  let resolvedDevice = input.device;
+  try {
+    const serial = await resolveSerial(input.device);
+    if (serial) resolvedDevice = serial;
+  } catch {
+    /* fallback to original */
+  }
+
+  const argv = buildArgv(cmd, resolvedDevice);
   const meta: RunMeta = {
     id,
     commandId: cmd.id,

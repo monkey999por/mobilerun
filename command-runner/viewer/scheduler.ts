@@ -64,7 +64,7 @@ function load(): void {
   }
 }
 
-function fire(entry: ScheduleEntry): void {
+async function fire(entry: ScheduleEntry): Promise<void> {
   const cmd = getCommand(entry.commandId);
   if (!cmd) {
     entry.lastError = `unknown command: ${entry.commandId}`;
@@ -79,7 +79,7 @@ function fire(entry: ScheduleEntry): void {
     return;
   }
   try {
-    startRun({ commandId: entry.commandId, device, scheduleEntryId: entry.id });
+    await startRun({ commandId: entry.commandId, device, scheduleEntryId: entry.id });
     entry.lastFiredAt = new Date().toISOString();
     entry.lastError = undefined;
     if (entry.kind === "once") {
@@ -101,7 +101,7 @@ function startJob(entry: ScheduleEntry): void {
   try {
     if (entry.kind === "cron") {
       if (!entry.cron) return;
-      const job = new Cron(entry.cron, () => fire(entry));
+      const job = new Cron(entry.cron, () => void fire(entry));
       jobs.set(entry.id, job);
     } else {
       if (!entry.runAt) return;
@@ -114,7 +114,7 @@ function startJob(entry: ScheduleEntry): void {
         persist();
         return;
       }
-      const job = new Cron(at, () => fire(entry));
+      const job = new Cron(at, () => void fire(entry));
       jobs.set(entry.id, job);
     }
   } catch (err) {
@@ -208,6 +208,6 @@ export function deleteEntry(id: string): boolean {
 export function runEntryNow(id: string): ScheduleEntry | null {
   const e = state.entries.find((x) => x.id === id);
   if (!e) return null;
-  fire(e);
+  void fire(e);
   return e;
 }

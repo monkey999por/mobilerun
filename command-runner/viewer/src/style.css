@@ -124,6 +124,24 @@ input:focus, select:focus, textarea:focus {
   padding: 16px;
 }
 
+/* 実行中バッジ (ヘッダ) */
+.running-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(122, 162, 247, 0.15);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.running-badge:hover {
+  background: rgba(122, 162, 247, 0.25);
+}
+
 /* Device bar */
 .device-bar {
   display: flex;

@@ -85,6 +85,71 @@ adb -a -P 5037 nodaemon server start &
 - **mobilerun の認証**: `${HOME}/Library/Application Support/droidrun` を bind mount しているので
   ホストで `mobilerun anthropic login` 済みなら同じトークンが使われる
 
+## 緊急停止 (viewer から中断できない場合)
+
+通常は viewer の **コマンドカード or 実行履歴の「中断」ボタン** で `SIGTERM` を送るが、
+ブラウザが応答しない / 暴走している時のためにシェルからの強制停止手段:
+
+### Docker compose 起動の場合
+
+```bash
+# A) コンテナ内の mobilerun プロセスだけ kill (推奨。viewer は生き続ける)
+docker compose exec viewer pkill -f mobilerun
+# 効かない時は SIGKILL
+docker compose exec viewer pkill -9 -f mobilerun
+
+# B) viewer コンテナごと再起動 (進行中の run は全て kill される)
+docker compose restart viewer
+
+# C) コンテナを落として作り直し (環境変数変更後など)
+docker compose down
+docker compose up -d
+```
+
+### ホスト直 (npm run dev) 起動の場合
+
+```bash
+pkill -f mobilerun          # SIGTERM
+pkill -9 -f mobilerun       # SIGKILL
+```
+
+### 端末側のアプリも止めたい
+
+mobilerun を kill してもアプリは動き続ける。アプリ側を強制停止:
+
+```bash
+# コンテナ内から
+docker compose exec viewer adb shell am force-stop <package>
+# 例: TikTok Lite
+docker compose exec viewer adb shell am force-stop com.zhiliaoapp.musically.go
+# X
+docker compose exec viewer adb shell am force-stop com.twitter.android
+# にゃんこ大戦争
+docker compose exec viewer adb shell am force-stop jp.co.ponos.battlecats
+```
+
+### adb の状態が壊れた時
+
+```bash
+# ホスト側
+adb kill-server
+adb -a -P 5037 nodaemon server start &     # 再起動
+
+# コンテナ側 (キャッシュクリア)
+docker compose exec viewer adb kill-server
+```
+
+### viewer 内部 state を消したい (履歴・スケジュール全消去)
+
+```bash
+rm -rf command-runner/viewer/state/runs
+rm -f  command-runner/viewer/state/schedule.json
+rm -f  command-runner/viewer/state/device.json
+docker compose restart viewer
+```
+
+---
+
 ## デバイス指定 (動的 + 自動探索)
 
 ヘッダ右上の device pill をクリックするとデバイス選択モーダルが開く。

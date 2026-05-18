@@ -169,6 +169,27 @@ export async function isConnected(addr: string): Promise<boolean> {
   return devices.some((d) => d.state === "device" && d.serial.startsWith(match.name));
 }
 
+/**
+ * UI 表示用 address (ip:port など) を、adb が実際に持っている device serial に解決する。
+ * Android 11+ の TLS 接続では serial が mDNS 名 (`adb-XXX._adb-tls-connect._tcp`) で
+ * ip:port では `adb -s` で見つからないため、mobilerun 起動前にここで変換する。
+ *
+ * 解決できなければ null を返す (呼び出し側は元の address をそのまま使うのが安全)。
+ */
+export async function resolveSerial(addr: string): Promise<string | null> {
+  if (!addr) return null;
+  const devices = await listDevices();
+  // 直接 serial 一致 (USB / 旧 wireless / 既に解決済みの mdns 名)
+  const direct = devices.find((d) => d.state === "device" && d.serial === addr);
+  if (direct) return direct.serial;
+  // mDNS の connect サービスから lookup
+  const mdns = await listMdnsServices();
+  const match = mdns.find((m) => m.kind === "connect" && m.addr === addr);
+  if (!match) return null;
+  const dev = devices.find((d) => d.state === "device" && d.serial.startsWith(match.name));
+  return dev ? dev.serial : null;
+}
+
 export async function status(): Promise<AdbStatus> {
   const [versionRes, devices, mdns] = await Promise.all([
     run(["version"]),

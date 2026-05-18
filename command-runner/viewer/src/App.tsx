@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { CommandFile, DeviceState } from "./types";
-import { fetchCommands, fetchDevice } from "./api";
+import { fetchCommands, fetchDevice, fetchRuns } from "./api";
 import { DeviceBar } from "./components/DeviceBar";
 import { DeviceModal } from "./components/DeviceModal";
 import { CommandsTab } from "./components/CommandsTab";
@@ -34,6 +34,7 @@ export function App() {
   const [deviceModalReason, setDeviceModalReason] = useState<string | undefined>();
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const [runsRefreshKey, setRunsRefreshKey] = useState(0);
+  const [runningRuns, setRunningRuns] = useState<{ id: string; commandName: string }[]>([]);
 
   const reloadDevice = useCallback(async (opts?: { promptIfMissing?: boolean }) => {
     try {
@@ -53,9 +54,21 @@ export function App() {
   useEffect(() => {
     void reloadCommands();
     void reloadDevice({ promptIfMissing: true });
-    // リアルタイム接続状態チェック (5秒間隔)
+    // リアルタイム接続状態チェック + running 件数 (5秒間隔)
+    const refreshRunning = async () => {
+      try {
+        const list = await fetchRuns();
+        setRunningRuns(
+          list.filter((r) => r.status === "running").map((r) => ({ id: r.id, commandName: r.commandName }))
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+    void refreshRunning();
     const t = setInterval(() => {
       void reloadDevice();
+      void refreshRunning();
     }, 5_000);
     return () => clearInterval(t);
   }, [reloadDevice, reloadCommands]);
@@ -74,6 +87,19 @@ export function App() {
     <div className="app">
       <div className="header">
         <h1>mobilerun command-runner</h1>
+        {runningRuns.length > 0 && (
+          <button
+            className="running-badge"
+            title="クリックで最新の実行ログを開く"
+            onClick={() => {
+              setOpenRunId(runningRuns[0].id);
+              setTab("runs");
+            }}
+          >
+            <span className="device-dot on" />
+            実行中 {runningRuns.length}
+          </button>
+        )}
         <DeviceBar
           device={device}
           connected={connected}
