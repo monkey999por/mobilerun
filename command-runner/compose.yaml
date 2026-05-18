@@ -40,7 +40,11 @@ services:
       # mobilerun 本体ソースを bind mount → editable install の参照先と一致させる
       - ..:/opt/mobilerun-src
       # mobilerun のホスト config を共有 (Anthropic OAuth 認証など)
+      # platformdirs 経由で参照される config.yaml 用
       - ${HOME}/Library/Application Support/droidrun:/home/node/.config/droidrun
+      # config.yaml 内の credential_path はホスト絶対パス (/Users/<u>/Library/...) で
+      # ハードコードされているので、同じパスを container 内にもマウントして解決させる
+      - ${HOME}/Library/Application Support/droidrun:/Users/ymt/Library/Application Support/droidrun
     environment:
       - NODE_ENV=development
       - TZ=Asia/Tokyo
