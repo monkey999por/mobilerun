@@ -118,6 +118,20 @@ input:focus, select:focus, textarea:focus {
   color: var(--text);
   border-bottom-color: var(--accent);
 }
+.tab-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 16px;
+  background: var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+}
+.tab.active .tab-count {
+  background: var(--accent);
+  color: #0a0a14;
+}
 .body {
   flex: 1;
   overflow: auto;

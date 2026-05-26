@@ -1,4 +1,15 @@
-import type { AdbDiscover, AdbExecResult, AdbStatus, CommandFile, DeviceState, QrPairSession, RunMeta, ScheduleEntry } from "./types";
+import type {
+  AdbDiscover,
+  AdbExecResult,
+  AdbStatus,
+  CommandFile,
+  DeviceState,
+  QrPairSession,
+  RunMeta,
+  ScheduleEntry,
+  SkillInfo,
+  SkillRunMeta,
+} from "./types";
 
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) {
@@ -224,4 +235,40 @@ export async function deleteSchedule(id: string): Promise<void> {
 
 export async function runScheduleNow(id: string): Promise<void> {
   await fetch(`/api/schedule/${encodeURIComponent(id)}/run`, { method: "POST" });
+}
+
+export async function fetchSkills(): Promise<SkillInfo[]> {
+  const r = await fetch("/api/skills");
+  const data = await json<{ skills: SkillInfo[] }>(r);
+  return data.skills;
+}
+
+export async function startSkillRun(
+  skillId: string,
+  extraInstruction?: string,
+): Promise<SkillRunMeta> {
+  const r = await fetch("/api/skill-runs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ skillId, extraInstruction }),
+  });
+  const data = await json<{ run: SkillRunMeta }>(r);
+  return data.run;
+}
+
+export async function fetchSkillRuns(): Promise<SkillRunMeta[]> {
+  const r = await fetch("/api/skill-runs");
+  const data = await json<{ runs: SkillRunMeta[] }>(r);
+  return data.runs;
+}
+
+export async function fetchSkillRun(
+  id: string,
+): Promise<{ run: SkillRunMeta; log: string; running: boolean }> {
+  const r = await fetch(`/api/skill-runs/${encodeURIComponent(id)}`);
+  return await json<{ run: SkillRunMeta; log: string; running: boolean }>(r);
+}
+
+export async function cancelSkillRun(id: string): Promise<void> {
+  await fetch(`/api/skill-runs/${encodeURIComponent(id)}/cancel`, { method: "POST" });
 }

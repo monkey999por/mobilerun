@@ -49,11 +49,21 @@ services:
       # config.yaml 内の credential_path はホスト絶対パス (/Users/<u>/Library/...) で
       # ハードコードされているので、同じパスを container 内にもマウントして解決させる
       - ${HOME}/Library/Application Support/droidrun:/Users/ymt/Library/Application Support/droidrun
+      # Claude Code CLI の認証 / 設定をホストから持ち込む。
+      # ホストで先に `claude /login` 済みなら、コンテナ内 claude もそのままログイン状態になる。
+      # ディレクトリが存在しないと bind mount で空ディレクトリが作られるだけ (害なし)。
+      - ${HOME}/.claude:/home/node/.claude
+      - ${HOME}/.config/claude:/home/node/.config/claude
     environment:
       - NODE_ENV=development
       - TZ=Asia/Tokyo
       - ADB_BIN=adb
       - MOBILERUN_BIN=mobilerun
+      # Claude Code CLI が認証情報を探すパス。bind mount 先と一致させる。
+      - CLAUDE_CONFIG_DIR=/home/node/.claude
+      - CLAUDE_BIN=claude
+      # claude を実行するときの cwd。repo root を指して .claude/skills/* を見せる
+      - CLAUDE_CWD=/opt/mobilerun-src
       # adb サーバーの所在:
       #
       # [既定] コンテナ内で adb サーバーを起動する。

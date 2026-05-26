@@ -39,6 +39,20 @@ import {
   reconcileStartup,
   RunInProgressError,
 } from "./lib/runs.ts";
+import { listSkills } from "./lib/skills.ts";
+import {
+  startSkillRun,
+  cancelSkillRun,
+  readSkillMeta,
+  readSkillLog,
+  listSkillRuns,
+  subscribeSkillRun,
+  isSkillRunning,
+  listRunningSkillIds,
+  reconcileSkillStartup,
+  annotateViewerSignalSkills,
+  SkillRunInProgressError,
+} from "./lib/skill-runs.ts";
 import * as adb from "./lib/adb.ts";
 import * as qrPair from "./lib/qr-pair.ts";
 import * as scheduler from "./scheduler.ts";
@@ -54,6 +68,12 @@ const DIST_DIR = resolve(__dirname, "dist");
   const { reconciled } = reconcileStartup();
   if (reconciled.length) {
     console.log(`[command-runner] reconciled ${reconciled.length} stale "running" runs:`, reconciled);
+  }
+}
+{
+  const { reconciled } = reconcileSkillStartup();
+  if (reconciled.length) {
+    console.log(`[command-runner] reconciled ${reconciled.length} stale "running" skill-runs:`, reconciled);
   }
 }
 
@@ -235,6 +255,92 @@ function sseEvent(event: string, data: string): string {
     .join("\n");
   return `event: ${event}\n${payload}\n\n`;
 }
+
+// --- skill (Claude Code CLI 経由) ---
+
+app.get("/api/skills", (c) => {
+  return c.json({ skills: listSkills() });
+});
+
+app.get("/api/skill-runs", (c) => {
+  return c.json({ runs: listSkillRuns(), activeRunIds: listRunningSkillIds() });
+});
+
+app.get("/api/skill-runs/:id", (c) => {
+  const id = c.req.param("id");
+  const meta = readSkillMeta(id);
+  if (!meta) return c.json({ error: "not found" }, 404);
+  return c.json({ run: meta, log: readSkillLog(id), running: isSkillRunning(id) });
+});
+
+app.post("/api/skill-runs", async (c) => {
+  const body = (await c.req.json().catch(() => ({}))) as {
+    skillId?: string;
+    extraInstruction?: string;
+  };
+  if (!body.skillId) return c.json({ error: "skillId required" }, 400);
+  try {
+    const meta = startSkillRun({
+      skillId: body.skillId,
+      extraInstruction:
+        typeof body.extraInstruction === "string" ? body.extraInstruction : undefined,
+    });
+    return c.json({ run: meta });
+  } catch (err) {
+    if (err instanceof SkillRunInProgressError) {
+      return c.json(
+        { error: err.message, code: err.code, activeRunId: err.activeRunId },
+        409,
+      );
+    }
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, 400);
+  }
+});
+
+app.post("/api/skill-runs/:id/cancel", (c) => {
+  const ok = cancelSkillRun(c.req.param("id"));
+  return c.json({ ok });
+});
+
+app.get("/api/skill-runs/:id/stream", (c) => {
+  const id = c.req.param("id");
+  const meta = readSkillMeta(id);
+  if (!meta) return c.json({ error: "not found" }, 404);
+  c.header("Content-Type", "text/event-stream");
+  c.header("Cache-Control", "no-cache");
+  c.header("Connection", "keep-alive");
+  c.header("X-Accel-Buffering", "no");
+  return stream(c, async (s) => {
+    const existing = readSkillLog(id);
+    if (existing) await s.write(sseEvent("log", existing));
+    if (!isSkillRunning(id)) {
+      await s.write(sseEvent("end", JSON.stringify(meta)));
+      return;
+    }
+    await new Promise<void>((done) => {
+      const unsub = subscribeSkillRun(id, {
+        onLog: (chunk) => {
+          s.write(sseEvent("log", chunk)).catch(() => {
+            unsub();
+            done();
+          });
+        },
+        onEnd: (m) => {
+          s.write(sseEvent("end", JSON.stringify(m)))
+            .catch(() => {})
+            .finally(() => {
+              unsub();
+              done();
+            });
+        },
+      });
+      s.onAbort(() => {
+        unsub();
+        done();
+      });
+    });
+  });
+});
 
 // --- adb ---
 
@@ -425,6 +531,7 @@ for (const sig of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {
   process.on(sig, () => {
     console.log(`[command-runner] received ${sig}, recording into active runs`);
     annotateViewerSignal(sig);
+    annotateViewerSignalSkills(sig);
     // 自前ハンドラを解除して default 動作 (= process 終了) に戻す。
     process.removeAllListeners(sig);
     process.kill(process.pid, sig);

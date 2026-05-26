@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import type { CommandFile, DeviceState } from "./types";
-import { fetchCommands, fetchDevice, fetchRuns } from "./api";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { CommandFile, DeviceState, SkillRunMeta } from "./types";
+import { fetchCommands, fetchDevice, fetchRuns, fetchSkillRuns } from "./api";
 import { DeviceBar } from "./components/DeviceBar";
 import { DeviceModal } from "./components/DeviceModal";
 import { CommandsTab } from "./components/CommandsTab";
@@ -8,8 +8,9 @@ import { RunsTab } from "./components/RunsTab";
 import { ScheduleTab } from "./components/ScheduleTab";
 import { RunModal } from "./components/RunModal";
 import { AdbTab } from "./components/AdbTab";
+import { SkillsTab } from "./components/SkillsTab";
 
-type Tab = "commands" | "runs" | "schedule" | "adb";
+type Tab = "commands" | "commands-atomic" | "skills" | "runs" | "schedule" | "adb";
 
 export function App() {
   const [tab, setTab] = useState<Tab>("commands");
@@ -35,6 +36,19 @@ export function App() {
   const [openRunId, setOpenRunId] = useState<string | null>(null);
   const [runsRefreshKey, setRunsRefreshKey] = useState(0);
   const [runningRuns, setRunningRuns] = useState<{ id: string; commandName: string }[]>([]);
+  const [activeSkillRun, setActiveSkillRun] = useState<SkillRunMeta | null>(null);
+
+  // atomic タグの有無で 2 タブに分ける。同じ CommandsTab に違うリストを渡す形なので、
+  // groups は両タブ共通で全グループを渡し、CommandsTab 側で空のものは描かない。
+  const { regularCommands, atomicCommands } = useMemo(() => {
+    const regular: CommandFile[] = [];
+    const atomic: CommandFile[] = [];
+    for (const c of commands) {
+      if (c.tags?.includes("atomic")) atomic.push(c);
+      else regular.push(c);
+    }
+    return { regularCommands: regular, atomicCommands: atomic };
+  }, [commands]);
 
   const reloadDevice = useCallback(async (opts?: { promptIfMissing?: boolean }) => {
     try {
@@ -57,10 +71,14 @@ export function App() {
     // リアルタイム接続状態チェック + running 件数 (5秒間隔)
     const refreshRunning = async () => {
       try {
-        const list = await fetchRuns();
+        const [runs, skillRuns] = await Promise.all([fetchRuns(), fetchSkillRuns()]);
         setRunningRuns(
-          list.filter((r) => r.status === "running").map((r) => ({ id: r.id, commandName: r.commandName }))
+          runs
+            .filter((r) => r.status === "running")
+            .map((r) => ({ id: r.id, commandName: r.commandName })),
         );
+        const activeSkill = skillRuns.find((r) => r.status === "running") ?? null;
+        setActiveSkillRun(activeSkill);
       } catch {
         /* ignore */
       }
@@ -111,7 +129,16 @@ export function App() {
       </div>
       <div className="tabs">
         <button className={`tab ${tab === "commands" ? "active" : ""}`} onClick={() => setTab("commands")}>
-          コマンド
+          コマンド <span className="tab-count">{regularCommands.length}</span>
+        </button>
+        <button
+          className={`tab ${tab === "commands-atomic" ? "active" : ""}`}
+          onClick={() => setTab("commands-atomic")}
+        >
+          コマンド (atomic) <span className="tab-count">{atomicCommands.length}</span>
+        </button>
+        <button className={`tab ${tab === "skills" ? "active" : ""}`} onClick={() => setTab("skills")}>
+          スキル
         </button>
         <button className={`tab ${tab === "runs" ? "active" : ""}`} onClick={() => setTab("runs")}>
           実行履歴
@@ -126,13 +153,32 @@ export function App() {
       <div className="body">
         {tab === "commands" && (
           <CommandsTab
-            commands={commands}
+            commands={regularCommands}
             groups={groups}
             loading={commandsLoading}
             activeRun={runningRuns[0] ?? null}
             onLaunched={onLaunched}
             onNeedDevice={onNeedDevice}
             onCommandsChanged={() => void reloadCommands()}
+          />
+        )}
+        {tab === "commands-atomic" && (
+          <CommandsTab
+            commands={atomicCommands}
+            groups={groups}
+            loading={commandsLoading}
+            activeRun={runningRuns[0] ?? null}
+            onLaunched={onLaunched}
+            onNeedDevice={onNeedDevice}
+            onCommandsChanged={() => void reloadCommands()}
+          />
+        )}
+        {tab === "skills" && (
+          <SkillsTab
+            activeSkillRun={activeSkillRun}
+            onLaunched={() => {
+              /* SkillsTab 内でモーダルを開くので App では特に何もしない */
+            }}
           />
         )}
         {tab === "runs" && <RunsTab onOpen={(id) => setOpenRunId(id)} refreshKey={runsRefreshKey} />}

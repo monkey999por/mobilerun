@@ -110,6 +110,27 @@ export interface RunMeta {
   parameters?: Record<string, string>;
 }
 
+export interface SkillInfo {
+  id: string;
+  name: string;
+  description?: string;
+  whenToUse?: string;
+}
+
+export type SkillRunStatus = "running" | "success" | "failed" | "cancelled";
+
+export interface SkillRunMeta {
+  id: string;
+  skillId: string;
+  status: SkillRunStatus;
+  startedAt: string;
+  endedAt?: string;
+  exitCode?: number | null;
+  exitSignal?: string | null;
+  prompt: string;
+  extraInstruction?: string;
+}
+
 export type ScheduleKind = "cron" | "once";
 
 export interface ScheduleEntry {

@@ -23,6 +23,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     python3-pip \
     git \
+    gh \
+    jq \
+    ripgrep \
+    less \
+    sudo \
   && rm -rf /var/lib/apt/lists/*
 
 # Google 公式 platform-tools の adb (mdns サブコマンド対応)。
@@ -48,6 +53,16 @@ RUN curl -LsSf https://astral.sh/uv/install.sh \
 RUN mkdir -p /app /opt/mobilerun-src /opt/mobilerun-venv \
  && chown -R node:node /app /opt/mobilerun-src /opt/mobilerun-venv
 
+# Claude Code CLI 用ディレクトリ。bind mount で上書きされない場合のフォールバック。
+# (compose 側で ${HOME}/.claude をマウントすればホスト側の認証がそのまま使える)
+RUN mkdir -p /home/node/.claude /home/node/.config/claude \
+ && chown -R node:node /home/node/.claude /home/node/.config/claude
+
+# node ユーザーに passwordless sudo を付与
+# (Claude Code が apt-get 等を呼ぶケース、コンテナ内デバッグ用)
+RUN echo "node ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/node \
+ && chmod 0440 /etc/sudoers.d/node
+
 USER node
 WORKDIR /opt/mobilerun-src
 
@@ -61,6 +76,14 @@ RUN uv venv /opt/mobilerun-venv \
  && ln -sf /opt/mobilerun-venv/bin/mobilerun /home/node/.local/bin/mobilerun
 
 ENV PATH=/home/node/.local/bin:$PATH
+
+# Claude Code CLI をネイティブインストーラーで導入。
+# - 認証情報は CLAUDE_CONFIG_DIR (/home/node/.claude) 配下に保存される。
+# - compose で ${HOME}/.claude をマウントすればホスト側 (claude /login 済み) の認証を継承可。
+# - 未マウント時はコンテナ内で `claude /login` する必要あり (Anthropic OAuth)。
+# 参考: https://code.claude.com/docs/ja/setup
+RUN curl -fsSL https://claude.ai/install.sh | bash
+ENV CLAUDE_CONFIG_DIR=/home/node/.claude
 
 # command-runner の依存をインストール (bind mount で上書きされない node_modules を確保)
 WORKDIR /app
