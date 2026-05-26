@@ -47,7 +47,17 @@ smoke (短時間タイムアウト下の Step n/N まで到達) は全 8 件 OK 
 
 #12 で「同時に 1 run」しか動かないようガード済み。skill が次の atomic を投げる時は、必ず `GET /api/runs/:id` で `status != "running"` を確認してから次を POST すること。
 
+## 自動化 (#24)
+
+このチェックリストを 1 件ずつ手で叩く代わりに、`.claude/skills/validate-all/SKILL.md` を
+viewer から起動すると、atomic → skill 代行実行 → 自己修復 (yaml の steps/vision/prompt を
+1 箇所だけ Edit して再試行) → レポート出力までを一気通貫で実行する。
+レポートは `command-runner/docs/validation-report-<YYYY-MM-DD>.md`。
+
+スイートの真実はこのファイルなので、ケース追加/削除はまずここを直してから
+`validate-all` の SKILL.md 内の表を整合させる (self-meta check で差分検知される)。
+
 ## 関連
 
-- 関連 issue: #2 (アトミック化), #8 (並列禁止), #3 (exit null 解析の instrumentation 入り)
-- 関連 skill: [[x-like-spree]], [[x-engagement-routine]], [[x-follow-recommended]], [[x-trending-reply]]
+- 関連 issue: #24 (自己実行/自己修復オーケストレータ), #2 (アトミック化), #8 (並列禁止), #3 (exit null 解析の instrumentation 入り)
+- 関連 skill: [[x-like-spree]], [[x-engagement-routine]], [[x-follow-recommended]], [[x-trending-reply]], [[validate-all]]
