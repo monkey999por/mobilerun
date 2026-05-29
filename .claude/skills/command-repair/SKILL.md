@@ -13,6 +13,7 @@ device 操作そのものは commands に寄せた方針 ([[project-skill-valida
 ## 入力
 
 - 対象コマンド id を **extraInstruction (skill 起動時の追加指示) で受け取る**。例: `x-like-5` / `x-reply-topmost`。
+- `commands/X/*.yaml` の任意のコマンドが対象。**件数バリアント** (`x-like-3/10/20`, `x-follow-10/15/20/25`, `x-reply-3/5/10/20`, `x-quote-retweet-3/5/10`) も本スキルで修復・検証する (#27 コメント)。
 - 任意で「直したいゴール」も追記可 (例: `x-like-5 — 5件きちんといいねが付くこと`)。
 - id が渡されていなければ、何を直すか不明なので **その旨を報告して終了** (推測で別コマンドを触らない)。
 
