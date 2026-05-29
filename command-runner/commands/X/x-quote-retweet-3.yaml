@@ -4,7 +4,7 @@ type: run
 steps: 66
 vision: true
 reasoning: true
-status: unconfirmed
+status: confirmed
 tags:
   - x
   - quote
