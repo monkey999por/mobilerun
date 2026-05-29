@@ -36,6 +36,10 @@ credentials.yaml
 !.github/
 !.claude/
 
+# Claude Code scheduler artifacts (session-only, harness-managed)
+.claude/scheduled_tasks.lock
+.claude/scheduled_tasks.json
+
 backend/
 frontend/
 
