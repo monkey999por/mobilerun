@@ -1,5 +1,23 @@
 # 実機完遂検証チェックリスト (#5)
 
+## 2026-05-29 更新 — skill 整理と方針転換
+
+実機検証の結果、orchestration skill は atomic を逐次 run するぶん**遅く** (1 run の vision 呼び出しが ~2-6 分、5 件で 30-60 分)、かつ like 系はエージェントが heart 反映を視覚確認できず**過剰タップ→失敗**しがちだった。これに対し、同じ操作を**単一 mobilerun run で直接やる既存コマンドは動作確認済み**で速い。よって「コマンドで代替可能 かつ skill 経由が遅い」skill は削除する方針に転換した:
+
+- ❌ 削除: `x-like-spree` → コマンド `x-like-5` で代替
+- ❌ 削除: `x-engagement-routine` → コマンド `x-like-and-reply` で代替
+- ❌ 削除: `x-follow-recommended` → コマンド `x-follow-5` で代替
+- ❌ 削除: `validate-all` (#24 の自己修復オーケストレータ) / `x-trending-reply`
+- ✅ skill は **`command-repair` 1 本のみ** に集約 (#27)。device 操作は commands に寄せ、skill は「コマンドを実機実行→ログ確認→yaml 1 箇所修復→再実行」のトライ&エラー (最大4回・無限ループ無し) を担う。ブラウザから手動起動。修復過程は `command-runner/docs/repair-logs/` に保存。
+
+適用済みの基盤修正 (再発防止):
+- コンテナに claude CLI を焼く Dockerfile 行が未ビルドで `spawn claude ENOENT` → image rebuild で解消
+- mobilerun の LLM read timeout 30s → host `config.yaml` の全 profile kwargs に `timeout: 120`
+- like の heart 命中: host `config.yaml` の `disabled_tools` から `click_at` を有効化 (ゼロ距離スワイプ代替をやめ `input tap` に)
+- 長 run の `400 thinking blocks cannot be modified`: `viewer/lib/skill-runs.ts` の spawn env に `CLAUDE_CODE_DISABLE_THINKING=1`
+
+以降の旧記述は履歴として残す。
+
 ## 経緯
 
 smoke (短時間タイムアウト下の Step n/N まで到達) は全 8 件 OK だが、自然完遂 (`status=success`, `exitCode=0`) の確認が 4 件未済だった。
@@ -47,7 +65,17 @@ smoke (短時間タイムアウト下の Step n/N まで到達) は全 8 件 OK 
 
 #12 で「同時に 1 run」しか動かないようガード済み。skill が次の atomic を投げる時は、必ず `GET /api/runs/:id` で `status != "running"` を確認してから次を POST すること。
 
+## 自動化 (#24)
+
+このチェックリストを 1 件ずつ手で叩く代わりに、`.claude/skills/validate-all/SKILL.md` を
+viewer から起動すると、atomic → skill 代行実行 → 自己修復 (yaml の steps/vision/prompt を
+1 箇所だけ Edit して再試行) → レポート出力までを一気通貫で実行する。
+レポートは `command-runner/docs/validation-report-<YYYY-MM-DD>.md`。
+
+スイートの真実はこのファイルなので、ケース追加/削除はまずここを直してから
+`validate-all` の SKILL.md 内の表を整合させる (self-meta check で差分検知される)。
+
 ## 関連
 
-- 関連 issue: #2 (アトミック化), #8 (並列禁止), #3 (exit null 解析の instrumentation 入り)
-- 関連 skill: [[x-like-spree]], [[x-engagement-routine]], [[x-follow-recommended]], [[x-trending-reply]]
+- 関連 issue: #24 (自己実行/自己修復オーケストレータ), #2 (アトミック化), #8 (並列禁止), #3 (exit null 解析の instrumentation 入り)
+- 関連 skill: [[x-like-spree]], [[x-engagement-routine]], [[x-follow-recommended]], [[x-trending-reply]], [[validate-all]]

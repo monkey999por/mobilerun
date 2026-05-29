@@ -152,7 +152,10 @@ export function startSkillRun(input: StartSkillRunInput): SkillRunMeta {
   // process.kill(-pid, ...) で claude 配下のサブプロセスごと潰せるようにする
   const child = spawn(bin, args, {
     cwd,
-    env: { ...process.env, FORCE_COLOR: "0" },
+    // CLAUDE_CODE_DISABLE_THINKING: 拡張思考を無効化。長 run で thinking ブロックが
+    // 保持されず "400 thinking blocks cannot be modified" で落ちるのを防ぐ。
+    // orchestrator は atomic をループするだけなので深い思考は不要。
+    env: { ...process.env, FORCE_COLOR: "0", CLAUDE_CODE_DISABLE_THINKING: "1" },
     detached: true,
   });
   running.set(id, child);
